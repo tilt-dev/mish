@@ -1,0 +1,79 @@
+[[override]]
+  name = "github.com/openzipkin/zipkin-go-opentracing"
+  version = "=v0.3.2"
+
+[[constraint]]
+  name = "cloud.google.com/go"
+  version = "0.18.0"
+
+[[constraint]]
+  name = "github.com/Sirupsen/logrus"
+  version = "1.0.2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/bugra/kmeans"
+
+[[constraint]]
+  name = "github.com/containerd/containerd"
+  version = "1.0.0-alpha3"
+
+[[constraint]]
+  name = "github.com/fsnotify/fsnotify"
+  version = "1.4.2"
+
+[[constraint]]
+  name = "github.com/windmilleng/fsnotify"
+  branch = "master"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/golang/groupcache"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/golang/protobuf"
+
+[[constraint]]
+  name = "github.com/gorilla/handlers"
+  version = "1.2.1"
+
+[[constraint]]
+  name = "github.com/gorilla/mux"
+  version = "1.4.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/grpc-ecosystem/go-grpc-middleware"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/spf13/cobra"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/windmilleng/go-diff"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/sync"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.5.1"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jinzhu/gorm"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/google/skylark"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/nsf/termbox-go"

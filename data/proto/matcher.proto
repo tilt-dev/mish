@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package wm.data;
+
+option go_package = "github.com/windmilleng/mish/data/proto;proto";
+
+// All pattern matchers in our system can be expressed in the form
+// (A or B or C) and (not D) and (not E)
+// or, equivalently,
+// (A or B or C) and not (D or E)
+// if we ever need a richer predicate language, we will need to make this
+// more complicated.
+message Matcher {
+  repeated string patterns = 1;
+}

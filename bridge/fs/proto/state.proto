@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package wm.fs;
+
+option go_package = "github.com/windmilleng/mish/bridge/fs/proto;proto";
+
+import "data/proto/matcher.proto";
+
+// Persistent state saved to disk
+message FsBridgeState {
+  repeated FsToWmState fs_to_wm_mirrors = 1;
+
+  // TODO(nick): Implement wm_to_fs_mirrors
+}
+
+message FsToWmState {
+  string pointer = 1;
+  bytes path = 2;
+  wm.data.Matcher matcher = 3;
+}

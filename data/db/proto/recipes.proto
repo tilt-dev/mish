@@ -1,0 +1,170 @@
+syntax = "proto3";
+
+package wm.data.db;
+
+option go_package = "github.com/windmilleng/mish/data/db/proto;proto";
+
+enum FileType {
+  REGULAR = 0;
+  SYMLINK = 1;
+}
+
+enum RecipeTagType {
+  EDIT = 0;
+  OPTIMAL = 1;
+  // 2 is reserved for Temp
+  REWRITTEN = 3;
+}
+
+message RecipeRTag {
+  string id = 1;
+  RecipeTagType type = 2;
+}
+
+message RecipeWTag {
+  string id = 1;
+  RecipeTagType type = 2;
+}
+
+message LookupPathToSnapshotRequest {
+  string snap_id = 1;
+  RecipeRTag tag = 2;
+}
+
+message LookupPathToSnapshotReply {
+  StoredRecipe recipe = 1;
+}
+
+message StoredRecipe {
+  string snap_id = 1;
+  Recipe recipe = 2;
+  RecipeWTag tag = 3;
+}
+
+message Recipe {
+  repeated string input_snap_id = 1;
+  oneof op {
+    WriteFileOp op_write_file = 2;
+    RemoveFileOp op_remove_file = 3;
+    InsertBytesFileOp op_insert_bytes_file = 4;
+    DeleteBytesFileOp op_delete_bytes_file = 5;
+    ChmodFileOp op_chmod_file = 6;
+    RmdirOp op_rmdir = 7;
+    SubdirOp op_subdir = 8;
+    DirOp op_dir = 9;
+    PreserveOp op_preserve = 10;
+    IdentityOp op_identity = 11;
+    OverlayOp op_overlay = 12;
+    EditFileOp op_edit_file = 13;
+    FailureOp op_failure = 14;
+  }
+}
+
+message Path {
+  oneof val {
+    string utf8 = 1;
+    bytes raw = 2;
+  }
+}
+
+// Ops defined below here
+
+// Writes an entire file contents.
+// Creates a new file if necessary, and overwrites any file that exists.
+message WriteFileOp {
+  Path path = 1;
+  bytes data = 2;
+  bool executable = 3;
+  FileType type = 4;
+}
+
+message EditFileOp {
+  Path path = 1;
+  repeated EditFileSplice splices = 2;
+}
+
+message EditFileSplice {
+  // The index to start splicing at.
+  int64 index = 1;
+
+  oneof edit {
+    // The bytes to insert, if this is an insert.
+    bytes data = 2;
+
+    int64 delete_count = 3;
+  }
+}
+
+// Insert bytes into an existing file. Should error if the file doesn't exist
+// or if we're inserting at a bad index.
+message InsertBytesFileOp {
+  Path path = 1;
+
+  // The index to start splicing at.
+  int64 index = 2;
+
+  // The bytes to insert.
+  bytes data = 3;
+}
+
+// Delete bytes from an existing file. Should error if the file doesn't exist
+// or if there aren't enough bytes to delete.
+message DeleteBytesFileOp {
+  Path path = 1;
+
+  // The index to start splicing at.
+  int64 index = 2;
+
+  // The number of bytes to delete.
+  int64 delete_count = 3;
+}
+
+// Remove a file.
+// Should error if the file doesn't exist.
+message RemoveFileOp {
+  Path path = 1;
+}
+
+// Modify permission bits on a file.
+// Should error if the file doesn't exist.
+message ChmodFileOp {
+  Path path = 1;
+  bool executable = 2;
+}
+
+// Remove a subdirectory (or empty string path means remove all)
+message RmdirOp {
+  Path path = 1;
+}
+
+// Select a subdirectory from the input.
+// Path may contain a / .
+message SubdirOp {
+  Path path = 1;
+}
+
+// Create a new directory with the names in names, each pointing at
+// the Input with the same index.
+message DirOp {
+  repeated Path name = 1;
+}
+
+// Creates a new Snapshot that has the files from input whose names match patterns
+// if strip_contents is true, the files will be empty (but exist)
+message PreserveOp {
+  repeated string patterns = 1;
+  bool strip_contents = 2;
+}
+
+// Creates a new Snapshot by doing nothing. Used to connect equivalent snapshots.
+message IdentityOp {
+}
+
+// Overlays multiple snapshots like in an overlay filesystem.
+message OverlayOp {
+}
+
+// Simulate a failure. Evaluators should always throw an error.
+message FailureOp {
+  string msg = 1;
+}

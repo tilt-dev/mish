@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package wm.data.db;
+
+option go_package = "github.com/windmilleng/mish/data/db/proto;proto";
+
+import "data/db/proto/debug.proto";
+import "data/db/proto/pointers.proto";
+import "data/db/proto/recipes.proto";
+
+service StorageHub {
+  // recipes lookup
+  // Returns a not found error if the snapshot doesn't exist.
+  rpc LookupPathToSnapshot (LookupPathToSnapshotRequest) returns (LookupPathToSnapshotReply) {}
+
+  rpc AllPathsToSnapshot (AllPathsToSnapshotRequest) returns (AllPathsToSnapshotReply) {}
+
+  // ptrs get
+  rpc AcquirePointer (AcquirePointerRequest) returns (AcquirePointerReply) {}
+  rpc PointerMetadata (PointerMetadataRequest) returns (PointerMetadataReply) {}
+
+  // ptrs get
+  rpc Get (GetRequest) returns (GetReply) {}
+
+  // Register a new Client.
+  rpc RegisterClient (RegisterClientRequest) returns (RegisterClientReply) {}
+
+  // Write multiple Writes at once.
+  rpc WriteMany (WriteManyRequest) returns (WriteManyReply) {}
+
+  // Fetch multiple Writes at once.
+  rpc HeadMany (HeadManyRequest) returns (stream HeadManyStreamReply) {}
+
+  // Check which snapshots we have already.
+  rpc HasSnapshots (HasSnapshotsRequest) returns (HasSnapshotsReply) {}
+
+  // debug ptrs
+  // Returns the currently active pointer IDs visible to the caller.
+  // Active means "currently in memory", though this is implementation-dependant.
+  rpc DebugPtrs (DebugPtrsRequest) returns (DebugPtrsReply) {}
+}
+
+message CreateSnapshotWrite {
+  StoredRecipe stored_recipe = 1;
+}
+
+message SetPointerWrite {
+  PointerAtSnapshot next = 1;
+}
+
+message AcquirePointerWrite {
+  string id = 1;
+  string host = 2;
+}
+
+message Write {
+  // All Writes from a Client must start with that client's prefix. I.e., one of:
+  // CreateSnapshotWrite whose ID starts with Prefix
+  // SetPointerWrite where the Pointer ID starts with Prefix
+  oneof w {
+    CreateSnapshotWrite w_create_snapshot = 1;
+    SetPointerWrite w_set_pointer = 2;
+    AcquirePointerWrite w_acquire_pointer = 3;
+  }
+}
+
+message RegisterClientRequest {
+  // the type of client, e.g. wmdaemon or wmrunner-432
+  string type = 1;
+}
+
+message RegisterClientReply {
+  // Prefix (objects created by this client must start with prefix)
+  // Also the name of the client
+  // e.g. r-wmdaemon-1 or r-wmrunner-432
+  string prefix = 1;
+
+  string DEPRECATED_token = 2;
+}
+
+// WriteManyRequest from a client
+message WriteManyRequest {
+  // The new Writes from this Client
+  repeated Write writes = 1;
+
+  string DEPRECATED_token = 2;
+}
+
+message WriteManyReply {
+  uint64 DEPRECATED_first_written_seq = 1;
+}
+
+message HeadManyRequest {
+  // For all of the given pointer heads, return a SetPointerWrite for the pointer head
+  // if we have an update, and the writes you need to get there.
+  repeated PointerAtRev pointer_heads = 1;
+}
+
+message HeadManyStreamReply {
+  Write write = 1;
+
+  // The pointer doesn't exist.
+  string id_not_found = 2;
+}
+
+message AllPathsToSnapshotRequest {
+  string snap_id = 1;
+}
+
+message AllPathsToSnapshotReply {
+  repeated StoredRecipe recipes = 1;
+}
+
+message HasSnapshotsRequest {
+  repeated string snap_ids = 1;
+  Consistency consistency = 2;
+}
+
+enum Consistency {
+  FULL_CONSISTENCY = 0;
+  FROM_CACHE = 1;
+}
+
+message HasSnapshotsReply {
+  repeated string snap_ids = 1;
+}

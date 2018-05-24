@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package wm.data.db;
+
+option go_package = "github.com/windmilleng/mish/data/db/proto;proto";
+
+message DebugPtrsRequest {
+  repeated string types = 1;
+
+  // The username
+  string DEPRECATED_owner = 2;
+
+  // The user id
+  uint64 owner_id = 3;
+}
+
+message DebugPtrsReply {
+  repeated string ptr_ids = 1;
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package wm.cmd;
+
+option go_package = "github.com/windmilleng/mish/data/cmd/proto;proto";
+
+import "data/proto/matcher.proto";
+import "runner/proto/artifact.proto";
+
+message Command {
+  string dir = 1;
+  repeated string argv = 2;
+  wm.data.Matcher snapshot_fs = 3;
+
+  enum CmdType {
+    PLAIN = 0;
+    PRESERVE = 1;
+    PLUGIN = 2;
+  }
+  CmdType cmd_type = 4;
+  string deps_file = 8;
+
+  map<string, string> env = 5;
+
+  string owner = 6;
+
+  wm.runner.ArtifactRequest artifact = 7;
+
+  string container_name = 9;
+}

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package wm.data;
+
+option go_package = "github.com/windmilleng/mish/data/proto;proto";
+
+message User {
+  uint64 user_id = 1;
+  string username = 2;
+
+  // Most of these are just standard oauth fields.
+  string email = 3;
+  string avatar_url = 4;
+  string name = 5;
+  string first_name = 6;
+  string last_name = 7;
+  string description = 8;
+  string location = 9;
+}

@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package wm.fs;
+
+option go_package = "github.com/windmilleng/mish/bridge/fs/proto;proto";
+
+import "bridge/fs/proto/state.proto";
+import "data/db/proto/pointers.proto";
+import "data/db/proto/recipes.proto";
+import "data/proto/matcher.proto";
+import "vendor/github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+
+service WindmillFS {
+  // snaps
+
+  // snaps checkout
+  rpc Checkout (CheckoutRequest) returns (CheckoutReply) {}
+
+  rpc ResetCheckout (ResetCheckoutRequest) returns (ResetCheckoutReply) {}
+
+  // snaps snapshot_dir
+  rpc SnapshotDir (SnapshotDirRequest) returns (SnapshotDirReply) {}
+
+  // mirror
+
+  // mirror wm2fs
+
+  // mirror wm2fs start
+  // TODO(dbentley): WM2FSS is an awful thing to see/type. Can we define a direction? Like,
+  // wm2fs is export, and fs2wm is import?
+  rpc WM2FSStart (WM2FSStartRequest) returns (WM2FSStartReply) {}
+
+  // mirror wm2fs stop
+  rpc WM2FSStop (WM2FSStopRequest) returns (WM2FSStopReply) {}
+
+  // mirror fs2wm
+
+  // mirror fs2wm start
+  //
+  // Acquires a pointer, snapshots an existing directory, and sets the
+  // pointer to the directory snapshot. Henceforth, any new changes to the
+  // directory will create a new snapshot and set the pointer to that snapshot.
+  //
+  // If the pointer does not exist, creates it.
+  rpc FS2WMStart (FS2WMStartRequest) returns (FS2WMStartReply) {}
+
+  // mirror fs2wm status
+  //
+  // Prints the status of the mirror at the given path.
+  rpc FS2WMStatus (FS2WMStatusRequest) returns (FS2WMStatusReply) {}
+  rpc FS2WMPointerStatus (FS2WMPointerStatusRequest) returns (FS2WMPointerStatusReply) {}
+
+  // mirror fs2wm fsync
+  //
+  // Wait for the mirror to catch up with the latest changes to disk.
+  rpc FS2WMFSync (FS2WMFSyncRequest) returns (FS2WMFSyncReply) {}
+
+  // mirror fs2wm stop
+  //
+  // Stop creating new snapshots when the directory changes.
+  rpc FS2WMStop (FS2WMStopRequest) returns (FS2WMStopReply) {}
+}
+
+// TODO(nick): All the paths in this file are expressed as string (utf-8),
+// they should probably be bytestrings
+
+// snaps create snapshot_dir
+message SnapshotDirRequest {
+  string path = 1;
+  wm.data.Matcher matcher = 2;
+  string base_snapshot_id = 3;
+  uint64 owner = 4;
+  wm.data.db.RecipeWTag tag = 5;
+}
+
+message SnapshotDirReply {
+  string created_snap_id = 1;
+}
+
+
+// snaps checkout
+message CheckoutStatus {
+  string path = 1;
+  string snap_id = 2;
+  google.protobuf.Timestamp mtime = 3;
+}
+
+message CheckoutRequest {
+  string snap_id = 1;
+  string path = 2;
+}
+
+message CheckoutReply {
+  // DEPRECATED. Use CheckoutStatus.
+  string checkout_path = 1;
+
+  CheckoutStatus checkout_status = 2;
+}
+
+message ResetCheckoutRequest {
+  // DEPRECATED. Use CheckoutStatus.
+  string snap_id = 1;
+  string path = 2;
+
+  CheckoutStatus status = 3;
+}
+
+message ResetCheckoutReply {
+}
+
+// mirror
+
+// mirror wm2fs
+
+// mirror wm2fs start
+message WM2FSStartRequest {
+  string pointer_id = 1;
+  string path = 2;
+}
+
+message WM2FSStartReply {}
+
+// mirror wm2fs stop
+message WM2FSStopRequest {
+  string path = 1;
+}
+
+
+message WM2FSStopReply {}
+
+// mirror fs2wm
+
+// mirror fs2wm start
+message FS2WMStartRequest {
+  string path = 1;
+  string pointer_id = 2;
+  wm.data.Matcher matcher = 3;
+}
+
+message FS2WMStartReply {}
+
+// mirror fs2wm status
+message FS2WMStatusRequest {
+  // An absolute path to the repo we want to check.
+  string path = 1;
+}
+
+message FS2WMStatusReply {
+  FsToWmState status = 1;
+}
+
+message FS2WMPointerStatusRequest {
+  string pointer_id = 1;
+}
+
+message FS2WMPointerStatusReply {
+  FsToWmState status = 1;
+}
+
+// mirror fs2wm fsync
+message FS2WMFSyncRequest {
+  string pointer = 1;
+}
+
+message FS2WMFSyncReply {
+  data.db.PointerAtSnapshot head = 1;
+}
+
+// mirror fs2wm stop
+message FS2WMStopRequest {
+  string pointer_id = 1;
+}
+
+message FS2WMStopReply {}

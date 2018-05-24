@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package wm.data.db;
+
+option go_package = "github.com/windmilleng/mish/data/db/proto;proto";
+
+service PointerLocker {
+  rpc IsHoldingPointer (IsHoldingPointerRequest) returns (IsHoldingPointerReply) {}
+}
+
+message IsHoldingPointerRequest {
+  string id = 1;
+}
+
+message IsHoldingPointerReply {
+  bool holding = 1;
+}

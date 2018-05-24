@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package wm.data;
+
+option go_package = "github.com/windmilleng/mish/data/proto;proto";
+
+import "data/proto/user.proto";
+
+// Exposed by any API that needs the caller to be an authenticated user.
+service Authenticator {
+  rpc CurrentUser (CurrentUserRequest) returns (CurrentUserReply) {};
+}
+
+message CurrentUserRequest {}
+
+message CurrentUserReply {
+  User user = 1;
+}

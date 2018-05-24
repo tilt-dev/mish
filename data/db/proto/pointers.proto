@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package wm.data.db;
+
+option go_package = "github.com/windmilleng/mish/data/db/proto;proto";
+
+// ptrs
+message PointerAtRev {
+  string id = 1;
+  int64 rev = 2;
+}
+
+message PointerAtSnapshot {
+  string id = 1;
+  int64 rev = 2;
+  string snap_id = 3;
+  int64 updated_at_ns = 4;
+  bool frozen = 5;
+}
+
+message PointerMetadata {
+  // The host that currently has the write lock.
+  string write_host = 1;
+}
+
+// ptrs get
+message GetRequest {
+  PointerAtRev at = 1;
+}
+
+message GetReply {
+  string snap_id = 1; // deprecated
+  PointerAtSnapshot ptr_at_snap = 2;
+}
+
+// ptrs acquire
+message AcquirePointerRequest {
+  string id = 1;
+
+  string write_host = 2;
+}
+
+message AcquirePointerReply {
+  PointerAtRev ptr_at_rev = 1;
+}
+
+message PointerMetadataRequest {
+  string id = 1;
+}
+
+message PointerMetadataReply {
+  PointerMetadata metadata = 1;
+}

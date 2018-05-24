@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package wm.fs;
+
+option go_package = "github.com/windmilleng/mish/bridge/fs/proto;proto";
+
+import "data/proto/matcher.proto";
+
+// Configuration for runners and compositions that need to capture file system state.
+message SnapshotConfig {
+  wm.data.Matcher matcher = 1;
+}
