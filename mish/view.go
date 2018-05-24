@@ -66,22 +66,25 @@ func (r *Render) renderFooter(m *Model) {
 	p.text(rev)
 
 	// Exec status
-	status := "Waiting for " + pathutil.WMShMill
+	exec := "Waiting for " + pathutil.WMShMill
 	if m.Shmill != nil {
-		status = "BUSY…"
+		exec = "BUSY…"
 		if m.Shmill.Done {
-			dur := m.Shmill.Duration.Truncate(time.Millisecond).String()
-			status = fmt.Sprintf("Done in %s", dur)
+			state := "Done"
+			if m.Shmill.Err != nil {
+				state = "Error"
+			}
+			exec = fmt.Sprintf("%s (%s)", state, m.Shmill.Duration.Truncate(time.Millisecond).String())
 		}
 	}
-	p.text(status)
+	p.text(exec)
 
 	// Logo
 	p.at(c.maxX-len(logo), 0)
 	p.text(logo)
 
 	// Queued Files
-	p.at(len(rev)+len(status), 0)
+	p.at(len(rev)+len(exec), 0)
 	if len(m.QueuedFiles) > 0 {
 		s := fmt.Sprint(m.QueuedFiles[0])
 		if len(m.QueuedFiles) > 1 {
@@ -89,7 +92,7 @@ func (r *Render) renderFooter(m *Model) {
 		}
 
 		msg := fmt.Sprintf(" %s Queued: %s", div, s)
-		if len(msg) > (c.maxX - len(rev) - len(status) - len(logo)) {
+		if len(msg) > (c.maxX - len(rev) - len(exec) - len(logo)) {
 			msg = fmt.Sprintf(" %s %s", div, s)
 		}
 
@@ -152,16 +155,17 @@ func (r *Render) renderBlock(p *pen, m *Model, ev Eval, collapsed bool) (numLine
 	for i := 0; i < r.maxX; i++ {
 		p.ch('━')
 	}
-	split := strings.SplitN(ev.Headline(), "\n", 2)
+
 	toggle := '▼'
 	if collapsed {
 		toggle = '▶'
 	}
 
+	split := strings.SplitN(ev.Headline(), "\n", 2)
 	headline := fmt.Sprintf("%c %s", toggle, split[0])
 	if len(split) > 1 {
 		// multi-line headline -- just print the first line with an ellipse
-		headline += "…"
+		headline += "..."
 	}
 	p.text(headline)
 
