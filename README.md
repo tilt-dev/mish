@@ -37,8 +37,8 @@ echo "sh(\"echo hello world\")" > Millfile
 ### Example Millfile
 ```python
 ### Configs
-watch(["**", "!.git/**"])
-autorun(["./server/*.go", "./common/*/*_test.go"])
+watch("**", "!.git/**")
+autorun("./server/*.go", "./common/*/*_test.go")
 
 ### Commands to execute
 sh("make proto")
