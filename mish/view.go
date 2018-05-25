@@ -115,15 +115,42 @@ func (r *Render) renderShmill(m *Model) []int {
 
 	c := newScrollCanvas(r.maxX)
 	p := newPen(c)
-	evals := sh.Evals
+	var bs []blockView
+	for i, ev := range sh.Evals {
+		b := blockView{
+			collapsed: m.Collapsed[i],
+		}
+
+		switch ev := ev.(type) {
+		case *Run:
+			b.headline = ev.cmd
+			b.done = ev.done
+			b.dur = ev.duration.Truncate(time.Millisecond).String()
+			b.err = ev.err
+			b.output = ev.output
+		case *Watch:
+			b.headline = fmt.Sprintf("watch %s", ev.patterns)
+			b.done = ev.done
+			b.dur = ev.duration.Truncate(time.Millisecond).String()
+			b.err = nil
+			b.output = ev.output
+		}
+
+		bs = append(bs, b)
+	}
+
 	if sh.Err != nil {
-		evals = append(evals, &ExecError{
-			err:      sh.Err,
-			duration: sh.Duration,
+		bs = append(bs, blockView{
+			headline:  "Mill error",
+			done:      true,
+			dur:       sh.Duration.Truncate(time.Millisecond).String(),
+			err:       sh.Err,
+			collapsed: m.Collapsed[len(sh.Evals)],
 		})
 	}
-	for i, ev := range evals {
-		numLines := r.renderBlock(p, m, ev, m.Collapsed[i])
+
+	for _, b := range bs {
+		numLines := r.renderBlock(p, b)
 		blocks = append(blocks, numLines)
 	}
 
@@ -145,9 +172,17 @@ func (r *Render) renderShmill(m *Model) []int {
 	return blocks
 }
 
-// renderEval renders an eval to the canvas as block, returning the number of lines
-// it takes up
-func (r *Render) renderBlock(p *pen, m *Model, ev Eval, collapsed bool) (numLines int) {
+type blockView struct {
+	headline  string
+	done      bool
+	dur       string
+	err       error
+	output    string
+	collapsed bool
+}
+
+// renderEval renders a blockView to the canvas, returning the number of lines it takes up
+func (r *Render) renderBlock(p *pen, b blockView) (numLines int) {
 	startY := p.posY
 	p.newlineMaybe()
 
@@ -157,11 +192,11 @@ func (r *Render) renderBlock(p *pen, m *Model, ev Eval, collapsed bool) (numLine
 	}
 
 	toggle := '▼'
-	if collapsed {
+	if b.collapsed {
 		toggle = '▶'
 	}
 
-	split := strings.SplitN(ev.Headline(), "\n", 2)
+	split := strings.SplitN(b.headline, "\n", 2)
 	headline := fmt.Sprintf("%c %s", toggle, split[0])
 	if len(split) > 1 {
 		// multi-line headline -- just print the first line with an ellipse
@@ -172,11 +207,11 @@ func (r *Render) renderBlock(p *pen, m *Model, ev Eval, collapsed bool) (numLine
 	// STATUS
 	// TODO: color indicating pass/fail?
 	state := "pending …"
-	if ev.Done() {
-		if ev.Err() == nil {
-			state = fmt.Sprintf("(%s) ✔", ev.DurStr())
+	if b.done {
+		if b.err == nil {
+			state = fmt.Sprintf("(%s) ✔", b.dur)
 		} else {
-			state = fmt.Sprintf("(%s) ✖", ev.DurStr())
+			state = fmt.Sprintf("(%s) ✖", b.dur)
 		}
 	}
 	gap := p.maxX - len(state) - len(headline) + 1
@@ -185,11 +220,11 @@ func (r *Render) renderBlock(p *pen, m *Model, ev Eval, collapsed bool) (numLine
 	}
 	p.text(state)
 	p.newlineMaybe()
-	if collapsed {
+	if b.collapsed {
 		return p.posY - startY
 	}
 
-	if ev.Output() == "" && ev.Err() == nil {
+	if b.output == "" && b.err == nil {
 		// Nothing else left to print, we don't want an extra divider
 		// HACK(maia): sloppy, but we're under deadline.
 		return p.posY - startY
@@ -199,11 +234,11 @@ func (r *Render) renderBlock(p *pen, m *Model, ev Eval, collapsed bool) (numLine
 		p.ch('╌')
 	}
 
-	p.text(ev.Output())
+	p.text(b.output)
 	p.newline()
 
-	if ev.Err() != nil {
-		p.text(fmt.Sprintf("err: %v", ev.Err()))
+	if b.err != nil {
+		p.text(fmt.Sprintf("err: %v", b.err))
 		p.newlineMaybe()
 	}
 
