@@ -16,6 +16,8 @@ func main() {
 		log.Fatalf("error setting up: %v", err)
 	}
 
+	// here's a comment, ive changed mish code!
+
 	err = sh.Run()
 	if err != nil {
 		// make sure it's not hidden

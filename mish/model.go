@@ -3,6 +3,8 @@ package mish
 import (
 	"time"
 
+	"fmt"
+
 	"github.com/windmilleng/mish/data"
 	"github.com/windmilleng/mish/data/db/dbpath"
 )
@@ -50,7 +52,11 @@ func NewShmill() *Shmill {
 // Eval is an Evaluation the user might care about.
 // E.g. Run, Watch, Print.
 type Eval interface {
-	eval()
+	Headline() string
+	Done() bool
+	DurStr() string
+	Err() error
+	Output() string
 }
 
 type Run struct {
@@ -62,6 +68,26 @@ type Run struct {
 	err      error
 }
 
+func (r *Run) Headline() string {
+	return r.cmd
+}
+
+func (r *Run) Done() bool {
+	return r.done
+}
+
+func (r *Run) DurStr() string {
+	return r.duration.Truncate(time.Millisecond).String()
+}
+
+func (r *Run) Err() error {
+	return r.err
+}
+
+func (r *Run) Output() string {
+	return r.output
+}
+
 type Watch struct {
 	output   string
 	patterns []string
@@ -70,5 +96,47 @@ type Watch struct {
 	done     bool
 }
 
-func (*Run) eval()   {}
-func (*Watch) eval() {}
+func (w *Watch) Headline() string {
+	return fmt.Sprintf("watch %s", w.patterns)
+}
+
+func (w *Watch) Done() bool {
+	return w.done
+}
+
+func (w *Watch) DurStr() string {
+	return w.duration.Truncate(time.Millisecond).String()
+}
+
+func (w *Watch) Err() error {
+	return nil
+}
+
+func (w *Watch) Output() string {
+	return w.output
+}
+
+type ExecError struct {
+	err      error
+	duration time.Duration
+}
+
+func (e *ExecError) Headline() string {
+	return "Mill error"
+}
+
+func (e *ExecError) Done() bool {
+	return true
+}
+
+func (e *ExecError) DurStr() string {
+	return e.duration.Truncate(time.Millisecond).String()
+}
+
+func (e *ExecError) Err() error {
+	return e.err
+}
+
+func (e *ExecError) Output() string {
+	return ""
+}

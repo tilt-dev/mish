@@ -6,7 +6,7 @@ Bonjour! Je m'appelle Michel—pronounced mee-shell (/mi.ʃɛl/). Coincidentally
 
 ## Getting the binary
 ```bash
-go get -u github.com/windmilleng/mish/cmd/mish
+go get -u github.com/windmilleng/mish
 ```
 Mish is written in Go. (It works for any shell commands; not just Go. We're working on distributing binaries, but for now you need to use Go to install mish)
 ## Using `mish`
