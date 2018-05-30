@@ -1,14 +1,15 @@
-<img src="https://raw.githubusercontent.com/windmilleng/mish/master/mish.png" width="571" height="180" title="Michel is a hermit crab">
+<img src="./mish.png" width="571" height="180" title="Michel is a hermit crab">
 
 Bonjour! Je m'appelle Michel—pronounced mee-shell (/mi.ʃɛl/). Coincidentally, that's also how you pronounce `mish`, which stands for **Mi**ll **Sh**ell. Feel free to imagine the rest of this document in an outrageous French accent as I help you get `mish` up and running.
 
 ![mish demo gifcast](./gifcast.gif "mish demo gifcast")
 
 ## Getting the binary
+If you're running OSX or Linux, you can download a pre-compiled binary from [**our releases page**](https://github.com/windmilleng/mish/releases). Otherwise, run:
 ```bash
 go get -u github.com/windmilleng/mish/cmd/mish
 ```
-Mish is written in Go. (It works for any shell commands; not just Go. We're working on distributing binaries, but for now you need to use Go to install mish)
+
 ## Using `mish`
 
 Configuration happens in your `Millfile`. Make one to get started:
