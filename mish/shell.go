@@ -119,7 +119,7 @@ func (sh *Shell) Run() error {
 	defer termbox.Close()
 	go sh.waitForEdits()
 	go sh.waitForTermEvents()
-	sh.timeCh = time.Tick(100 * time.Millisecond)
+	sh.timeCh = time.Tick(time.Second)
 	for {
 		select {
 		case head := <-sh.editCh:

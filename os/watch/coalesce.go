@@ -18,21 +18,21 @@ func coalesceEvents(inCh chan fsnotify.Event, outCh chan fsnotify.Event) {
 	var event fsnotify.Event
 	var nextEvent fsnotify.Event
 	var ok bool
-	eventNeedsOut := false
 	coalesceCount := 1
+	var timerCh <-chan time.Time // timerCh is non-nil iff there is a pending event to send out
 
 	for {
 		select {
 		case nextEvent, ok = <-inCh:
 			if !ok {
-				if eventNeedsOut {
+				if timerCh != nil {
 					outCh <- event
 				}
 				return
 			}
 			nextEvent = simplify(nextEvent)
 
-			if eventNeedsOut {
+			if timerCh != nil {
 				merged := false
 				if coalesceCount < MAX_COALESCE {
 					event, merged = coalesce(event, nextEvent)
@@ -49,15 +49,13 @@ func coalesceEvents(inCh chan fsnotify.Event, outCh chan fsnotify.Event) {
 				}
 			} else {
 				event = nextEvent
-				eventNeedsOut = true
+				timerCh = time.After(time.Millisecond)
 				coalesceCount = 1
 			}
-		case <-time.After(time.Millisecond):
-			if eventNeedsOut {
-				outCh <- event
-				eventNeedsOut = false
-				coalesceCount = 1
-			}
+		case <-timerCh:
+			outCh <- event
+			timerCh = nil
+			coalesceCount = 1
 		}
 	}
 }
