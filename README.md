@@ -1,4 +1,4 @@
-![mish](./mish.jpg "Michel is a hermit crab")
+<img src="https://raw.githubusercontent.com/windmilleng/mish/master/mish.png" width="571" height="180" title="Michel is a hermit crab">
 
 Bonjour! Je m'appelle Michel—pronounced mee-shell (/mi.ʃɛl/). Coincidentally, that's also how you pronounce `mish`, which stands for **Mi**ll **Sh**ell. Feel free to imagine the rest of this document in an outrageous French accent as I help you get `mish` up and running.
 
