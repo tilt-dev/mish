@@ -49,7 +49,10 @@ sh("go test server", tolerate_failure=True) # if this exits w/ non-zero code, ke
 sh("go test common")
 ```
 
-## Guiding Questions for Alpha Users
+## Tell Us What You Think!
+Tried `mish`? Loved it? Hated it? Couldn't get past the install? [**Take our survey**](https://docs.google.com/forms/d/e/1FAIpQLSf8UXLG0FOeMswoW7LuUP02CeUwKBccJishJKDE_VyOqe7g_g/viewform?usp=sf_link) and tell us about your experience. Your feedback will help us make dev tools better for everyone!
+
+### Guiding Questions for Alpha Users
 If you're one of our amazing alpha users, thank you! We appreciate you taking the time to test our product and give us feedback. Here are some things that we'd love for you to keep in mind as you test out `mish` so we can pick your brain about them later:
 1. When do you find yourself editing your Millfile? If it occurs to you to edit your Millfile and you don’t, why?
 2. When are you still using your shell instead of mish? Why?
