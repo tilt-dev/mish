@@ -16,6 +16,7 @@ var defaultGithubLogins = []string{
 	"jazzdan",
 	"yuindustries",
 	"maiamcc",
+	"pmt",
 }
 
 // Create native accounts.
