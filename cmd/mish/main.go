@@ -13,13 +13,17 @@ func main() {
 	expvar.NewString("serviceName").Set("mish")
 	sh, err := mish.Setup()
 	if err != nil {
-		log.Fatalf("error setting up: %v", err)
+		handleErr("error setting up", err)
 	}
 
 	err = sh.Run()
 	if err != nil {
-		// make sure it's not hidden
-		fmt.Fprintf(os.Stderr, "error running: %v\n", err)
-		log.Fatalf("error running: %v", err)
+		handleErr("error running", err)
 	}
+}
+
+func handleErr(msg string, err error) {
+	// print to stderr so user can see it w/o digging in logfile
+	fmt.Fprintf(os.Stderr, "%s: %v\n", msg, err)
+	log.Fatalf("%s: %v", msg, err)
 }
