@@ -26,6 +26,21 @@ type Model struct {
 	// modified by keys
 	Cursor    Cursor
 	Collapsed map[int]bool
+
+	Spinner *Spinner
+}
+
+type Spinner struct {
+	Chars []rune
+	Index int
+}
+
+func (s *Spinner) Incr() {
+	s.Index = (s.Index + 1) % len(s.Chars)
+}
+
+func (s *Spinner) Cur() rune {
+	return s.Chars[s.Index]
 }
 
 type Cursor struct {

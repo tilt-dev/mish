@@ -96,6 +96,7 @@ func Setup() (*Shell, error) {
 			HeadSnap:  data.EmptySnapshotID,
 			Autorun:   dbpath.NewFileMatcherOrPanic(pathutil.WMShMill),
 			Collapsed: make(map[int]bool),
+			Spinner:   &Spinner{Chars: []rune{'⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'}},
 		},
 		view: &View{},
 
@@ -142,6 +143,7 @@ func (sh *Shell) Run() error {
 			sh.handleTerminal(event)
 		case t := <-sh.timeCh:
 			sh.model.Now = t
+			sh.model.Spinner.Incr()
 		case err := <-sh.panicCh:
 			return err
 		}

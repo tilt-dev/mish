@@ -68,9 +68,9 @@ func (r *Render) renderFooter(m *Model) {
 	// Exec status
 	exec := "Waiting for " + pathutil.WMShMill
 	if m.Shmill != nil {
-		exec = "BUSY…"
+		exec = fmt.Sprintf("%c Busy", m.Spinner.Cur())
 		if m.Shmill.Done {
-			state := "Done"
+			state := "⠿ Done"
 			if m.Shmill.Err != nil {
 				state = "Error"
 			}
