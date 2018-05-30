@@ -56,7 +56,7 @@ func (c *scrollCanvas) RenderAt(screenY, numLines, startLine int) {
 		return
 	}
 
-	if len(c.lines)-startLine < 0 {
+	if len(c.lines)-startLine < numLines || len(c.lines)-startLine < 0 {
 		startLine = len(c.lines) - numLines
 	}
 
