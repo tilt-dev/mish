@@ -5,7 +5,7 @@ Bonjour! Je m'appelle Michel—pronounced mee-shell (/mi.ʃɛl/). Coincidentally
 ![mish demo gifcast](./gifcast.gif "mish demo gifcast")
 
 ## Getting the binary
-If you're running OSX or Linux, you can download a pre-compiled binary from [**our releases page**](https://github.com/windmilleng/mish/releases). Otherwise, run:
+If you're running OSX or Linux, you can download a pre-compiled binary from [**our releases page**](https://github.com/windmilleng/mish/releases). Otherwise, you can install via the Go toolchain. First [install Go](https://golang.org/doc/install#install) and make sure that you've added `/usr/local/go/bin` to the `PATH` environment variable. Then install `mish` with:
 ```bash
 go get -u github.com/windmilleng/mish/cmd/mish
 ```
