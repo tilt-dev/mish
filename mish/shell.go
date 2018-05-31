@@ -116,11 +116,23 @@ func setupMirror(ctx context.Context, fs fs.FSBridge, dir string, ptrID data.Poi
 	return fs.ToWMStart(ctx, dir, ptrID, matcher)
 }
 
+func (sh *Shell) cancelCmd() {
+	if sh.shmillCancel != nil {
+		// TODO(dmiller) have a timeout for this
+		// maybe a ui if it takes too long?
+		sh.shmillCancel()
+		for _ = range sh.shmillCh {
+			// wait for os/exec to tell us that this is done
+		}
+	}
+}
 func (sh *Shell) Run() error {
 	defer termbox.Close()
 	go sh.waitForEdits()
 	go sh.waitForTermEvents()
 	sh.timeCh = time.Tick(time.Second)
+	defer sh.cancelCmd()
+
 	for {
 		select {
 		case head := <-sh.editCh:
@@ -205,10 +217,7 @@ func (sh *Shell) startRun() {
 	sh.model.Shmill = NewShmill()
 	sh.model.QueuedFiles = nil
 	if sh.shmillCh != nil {
-		sh.shmillCancel()
-		// wait until this shmill execution tells us it's done (by closing the channel)
-		for _ = range sh.shmillCh {
-		}
+		sh.cancelCmd()
 	}
 
 	ctx, cancelFunc := context.WithCancel(sh.ctx)
