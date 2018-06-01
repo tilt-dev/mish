@@ -66,7 +66,7 @@ func (c *scrollCanvas) RenderAt(screenY, numLines, startLine int) {
 		return
 	}
 
-	highlightCells(c.lines[startLine], termbox.ColorBlue, termbox.ColorDefault)
+	highlightCells(c.lines[startLine], termbox.ColorWhite, termbox.ColorBlue)
 
 	// Don't keep scrolling if there is no content
 	if len(c.lines)-startLine < numLines || len(c.lines)-startLine < 0 {

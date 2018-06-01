@@ -121,8 +121,10 @@ func (sh *Shell) cancelCmd() {
 		// TODO(dmiller) have a timeout for this
 		// maybe a ui if it takes too long?
 		sh.shmillCancel()
-		for _ = range sh.shmillCh {
-			// wait for os/exec to tell us that this is done
+		if sh.shmillCh != nil {
+			for _ = range sh.shmillCh {
+				// wait for os/exec to tell us that this is done
+			}
 		}
 	}
 }
