@@ -6,6 +6,16 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+func highlightCells(cells []termbox.Cell, fg, bg termbox.Attribute) {
+	for i, c := range cells {
+		cells[i] = termbox.Cell{
+			Ch: c.Ch,
+			Fg: fg,
+			Bg: bg,
+		}
+	}
+}
+
 type canvas interface {
 	MaxX() int
 	MaxY() int
@@ -56,6 +66,9 @@ func (c *scrollCanvas) RenderAt(screenY, numLines, startLine int) {
 		return
 	}
 
+	highlightCells(c.lines[startLine], termbox.ColorBlue, termbox.ColorDefault)
+
+	// Don't keep scrolling if there is no content
 	if len(c.lines)-startLine < numLines || len(c.lines)-startLine < 0 {
 		startLine = len(c.lines) - numLines
 	}

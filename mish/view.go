@@ -161,12 +161,6 @@ func (r *Render) renderShmill(m *Model) []int {
 		}
 	}
 	scrollY += m.Cursor.Line
-
-	// Separator at end of cmds
-	for i := 0; i < r.maxX; i++ {
-		p.ch('━')
-	}
-
 	c.RenderAt(0, r.maxY-footerHeight, scrollY)
 
 	return blocks
@@ -186,20 +180,15 @@ func (r *Render) renderBlock(p *pen, b blockView) (numLines int) {
 	startY := p.posY
 	p.newlineMaybe()
 
-	// HEADER - top separator
-	for i := 0; i < r.maxX; i++ {
-		p.ch('━')
-	}
-
 	toggle := '▼'
 	if b.collapsed {
 		toggle = '▶'
 	}
 
+	// multi-line headline -- just print the first line with an ellipse
 	split := strings.SplitN(b.headline, "\n", 2)
 	headline := fmt.Sprintf("%c %s", toggle, split[0])
 	if len(split) > 1 {
-		// multi-line headline -- just print the first line with an ellipse
 		headline += "..."
 	}
 	p.text(headline)
@@ -220,26 +209,33 @@ func (r *Render) renderBlock(p *pen, b blockView) (numLines int) {
 	}
 	p.text(state)
 	p.newlineMaybe()
-	if b.collapsed {
-		return p.posY - startY
+	if !b.collapsed {
+		if b.output == "" && b.err == nil {
+			// Nothing else left to print, we don't want an extra divider
+			// HACK(maia): sloppy, but we're under deadline.
+			for i := 0; i < r.maxX; i++ {
+				p.ch('━')
+			}
+			return p.posY - startY
+		}
+
+		// HEADER - bottom separator
+		for i := 0; i < p.maxX; i++ {
+			p.ch('╌')
+		}
+
+		p.text(b.output)
+		p.newline()
+
+		if b.err != nil {
+			p.text(fmt.Sprintf("err: %v", b.err))
+			p.newlineMaybe()
+		}
 	}
 
-	if b.output == "" && b.err == nil {
-		// Nothing else left to print, we don't want an extra divider
-		// HACK(maia): sloppy, but we're under deadline.
-		return p.posY - startY
-	}
-	// HEADER - bottom separator
-	for i := 0; i < p.maxX; i++ {
-		p.ch('╌')
-	}
-
-	p.text(b.output)
-	p.newline()
-
-	if b.err != nil {
-		p.text(fmt.Sprintf("err: %v", b.err))
-		p.newlineMaybe()
+	// HEADER - top separator for next command
+	for i := 0; i < r.maxX; i++ {
+		p.ch('━')
 	}
 
 	return p.posY - startY
