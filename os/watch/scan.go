@@ -208,6 +208,22 @@ func (s *scanner) scanNewDir(path string) (map[string]*trackedFile, error) {
 		}
 
 		mode := info.Mode()
+		if isSymlink(mode) {
+			// Check to make sure the symlink is valid.
+			// Emacs creates deliberately broken symlinks as lock files.
+			_, err := os.Stat(innerPath)
+			if err != nil {
+				if !os.IsNotExist(err) {
+					return err
+				}
+
+				if trackedIfFile {
+					files[relPath] = nil
+				}
+				return nil
+			}
+		}
+
 		if mode.IsDir() && !trackedIfDir {
 			return filepath.SkipDir
 		} else if !mode.IsDir() && !trackedIfFile {

@@ -67,6 +67,16 @@ func TestCreateBrokenSymlink(t *testing.T) {
 	f.assertNoOp()
 }
 
+func TestCreateBrokenSymlinkBeforeWatch(t *testing.T) {
+	f := newFixture(t)
+	defer f.tearDown()
+
+	f.writeSymlink("a.txt", "b.txt")
+	f.startWatchAndSync(data.EmptySnapshotID)
+	f.fsync()
+	f.assertNoOp()
+}
+
 func TestCreateFileInnerDir(t *testing.T) {
 	f := newFixture(t)
 	defer f.tearDown()
