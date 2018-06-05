@@ -23,11 +23,65 @@ func TestNoEvents(t *testing.T) {
 	f.assertNoEvents()
 }
 
+func TestEventOrdering(t *testing.T) {
+	f := newWMNotifyFixture(t)
+	defer f.tearDown()
+
+	count := 10
+	dirs := make([]string, count)
+	for i, _ := range dirs {
+		dir, err := f.root.NewDir("watched")
+		if err != nil {
+			t.Fatal(err)
+		}
+		dirs[i] = dir.Path()
+		err = f.notify.Add(dir.Path())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	f.fsync()
+	f.events = nil
+
+	for i, dir := range dirs {
+		base := fmt.Sprintf("%d.txt", i)
+		p := filepath.Join(dir, base)
+		err := ioutil.WriteFile(p, []byte(base), os.FileMode(0777))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	f.fsync()
+
+	// Check to make sure that the files appeared in the right order.
+	createEvents := make([]fsnotify.Event, 0, count)
+	for _, e := range f.events {
+		if e.Op == fsnotify.Create {
+			createEvents = append(createEvents, e)
+		}
+	}
+
+	if len(createEvents) != count {
+		t.Fatalf("Expected %d create events. Actual: %+v", count, createEvents)
+	}
+
+	for i, event := range createEvents {
+		base := fmt.Sprintf("%d.txt", i)
+		p := filepath.Join(dirs[i], base)
+		if event.Name != p {
+			t.Fatalf("Expected event %q at %d. Actual: %+v", base, i, createEvents)
+		}
+	}
+}
+
 type wmNotifyFixture struct {
-	t      *testing.T
-	tmp    *temp.TempDir
-	notify wmNotify
-	events []fsnotify.Event
+	t       *testing.T
+	root    *temp.TempDir
+	watched *temp.TempDir
+	notify  wmNotify
+	events  []fsnotify.Event
 }
 
 func newWMNotifyFixture(t *testing.T) *wmNotifyFixture {
@@ -36,19 +90,25 @@ func newWMNotifyFixture(t *testing.T) *wmNotifyFixture {
 		t.Fatal(err)
 	}
 
-	tmp, err := temp.NewDir(t.Name())
+	root, err := temp.NewDir(t.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = notify.Add(tmp.Path())
+	watched, err := root.NewDir("watched")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = notify.Add(watched.Path())
 	if err != nil {
 		t.Fatal(err)
 	}
 	return &wmNotifyFixture{
-		t:      t,
-		tmp:    tmp,
-		notify: notify,
+		t:       t,
+		root:    root,
+		watched: watched,
+		notify:  notify,
 	}
 }
 
@@ -59,7 +119,7 @@ func (f *wmNotifyFixture) assertNoEvents() {
 }
 
 func (f *wmNotifyFixture) fsync() {
-	syncPath := filepath.Join(f.tmp.Path(), "sync.txt")
+	syncPath := filepath.Join(f.watched.Path(), "sync.txt")
 	eventsDoneCh := make(chan struct{})
 	timeout := time.After(time.Second)
 	go func() {
@@ -71,7 +131,10 @@ func (f *wmNotifyFixture) fsync() {
 
 			case event := <-f.notify.Events():
 				if strings.Contains(event.Name, "sync.txt") {
-					return
+					if event.Op == fsnotify.Write {
+						return
+					}
+					continue
 				}
 				f.events = append(f.events, event)
 
@@ -81,7 +144,7 @@ func (f *wmNotifyFixture) fsync() {
 		}
 	}()
 
-	err := ioutil.WriteFile(syncPath, []byte(fmt.Sprintf("%s", time.Now())), os.FileMode(777))
+	err := ioutil.WriteFile(syncPath, []byte(fmt.Sprintf("%s", time.Now())), os.FileMode(0777))
 	if err != nil {
 		f.t.Fatal(err)
 	}
@@ -89,7 +152,7 @@ func (f *wmNotifyFixture) fsync() {
 }
 
 func (f *wmNotifyFixture) tearDown() {
-	err := f.tmp.TearDown()
+	err := f.root.TearDown()
 	if err != nil {
 		f.t.Fatal(err)
 	}
