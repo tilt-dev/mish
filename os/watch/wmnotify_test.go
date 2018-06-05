@@ -120,14 +120,19 @@ func (f *wmNotifyFixture) assertNoEvents() {
 
 func (f *wmNotifyFixture) fsync() {
 	syncPath := filepath.Join(f.watched.Path(), "sync.txt")
-	eventsDoneCh := make(chan struct{})
+	eventsDoneCh := make(chan error)
 	timeout := time.After(time.Second)
 	go func() {
-		defer close(eventsDoneCh)
+		var exitErr error
+		defer func() {
+			eventsDoneCh <- exitErr
+			close(eventsDoneCh)
+		}()
+
 		for {
 			select {
-			case err := <-f.notify.Errors():
-				f.t.Fatal(err)
+			case exitErr = <-f.notify.Errors():
+				return
 
 			case event := <-f.notify.Events():
 				if strings.Contains(event.Name, "sync.txt") {
@@ -139,7 +144,8 @@ func (f *wmNotifyFixture) fsync() {
 				f.events = append(f.events, event)
 
 			case <-timeout:
-				f.t.Fatal("fsync: timeout")
+				exitErr = fmt.Errorf("fsync: timeout")
+				return
 			}
 		}
 	}()
@@ -148,7 +154,10 @@ func (f *wmNotifyFixture) fsync() {
 	if err != nil {
 		f.t.Fatal(err)
 	}
-	<-eventsDoneCh
+	err = <-eventsDoneCh
+	if err != nil {
+		f.t.Fatal(err)
+	}
 }
 
 func (f *wmNotifyFixture) tearDown() {
