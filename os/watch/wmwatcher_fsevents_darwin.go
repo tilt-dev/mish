@@ -3,7 +3,6 @@
 package watch
 
 import (
-	"log"
 	"path/filepath"
 	"sync"
 	"time"
@@ -21,7 +20,6 @@ type darwinNotify struct {
 }
 
 func (d *darwinNotify) Add(name string) error {
-	log.Printf("wmwatcher: Add %s", name)
 	dev, err := fsevents.DeviceForPath(name)
 	if err != nil {
 		return err
@@ -45,10 +43,18 @@ func (d *darwinNotify) Add(name string) error {
 			case x := <-es.Events:
 				for _, y := range x {
 					y.Path = filepath.Join("/", y.Path)
-					log.Printf("Got %+v type event from fsevents: %+v", eventFlagsToOp(y.Flags), y)
+					op := eventFlagsToOp(y.Flags)
+
+					// ignore events that say the watched directory
+					// has been created. these are fired spuriously
+					// on initiation.
+					if name == y.Path && op == fsnotify.Create {
+						continue
+					}
+
 					d.events <- fsnotify.Event{
 						Name: y.Path,
-						Op:   eventFlagsToOp(y.Flags),
+						Op:   op,
 					}
 				}
 			}
