@@ -29,6 +29,15 @@ func RealAbs(path string) (string, error) {
 	return filepath.Abs(realPath)
 }
 
+// Like os.Getwd, but with all symlinks resolved.
+func Realwd() (string, error) {
+	path, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return RealAbs(path)
+}
+
 func IsDir(path string) bool {
 	f, err := os.Stat(path)
 	if err != nil {
