@@ -161,7 +161,7 @@ func (sh *Shell) Run() error {
 		case err := <-sh.panicCh:
 			return err
 		}
-		sh.model.BlockSizes = sh.view.Render(sh.model)
+		sh.model.BlockSizes, sh.model.ShmillHeight = sh.view.Render(sh.model)
 	}
 }
 
@@ -290,6 +290,12 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 	case termbox.KeyArrowDown:
 		sh.model.Cursor.Line++
 		sh.snapCursorToBlock()
+	case termbox.KeyPgdn:
+		sh.model.Cursor.Line += sh.model.ShmillHeight
+		sh.snapCursorToBlock()
+	case termbox.KeyPgup:
+		sh.model.Cursor.Line -= sh.model.ShmillHeight
+		sh.snapCursorToBlock()
 	}
 
 	switch event.Ch {
@@ -319,26 +325,40 @@ func (sh *Shell) snapCursorToBlock() {
 	c := sh.model.Cursor
 	blocks := sh.model.BlockSizes
 
-	if c.Line < 0 {
-		c.Block = sh.prevBlock(c.Block)
-		c.Line = sh.lastBlockLine(c.Block)
-	}
-	if c.Line > sh.lastBlockLine(c.Block) {
-		c.Block++
-		c.Line = 0
-	}
+	sh.model.Cursor = snapCursorToBlock(c, blocks)
+}
+
+func snapCursorToBlock(c Cursor, blocks []int) Cursor {
 	if c.Block >= len(blocks) {
-		// we've fallen off the bottom edge; snap back
+		// fallen off edge of last block, go to end
 		lastBlock := len(blocks) - 1
 		c.Block = lastBlock
-		c.Line = sh.lastBlockLine(lastBlock)
+		c.Line = blocks[c.Block] // subtracting 1 doesn't work here?
+		return c
 	}
 	if c.Block < 0 {
 		c.Block = 0
 		c.Line = 0
+		return c
 	}
-
-	sh.model.Cursor = c
+	// increment to a successive block based on the size of the current block
+	if c.Line > blocks[c.Block] {
+		c.Line = c.Line - blocks[c.Block]
+		c.Block++
+		return snapCursorToBlock(c, blocks)
+	}
+	// decrement to a previous block based on size of previous block
+	if c.Line < 0 {
+		if c.Block < 1 {
+			c.Block = 0
+			c.Line = 0
+			return c
+		}
+		c.Line = c.Line + blocks[c.Block-1]
+		c.Block--
+		return snapCursorToBlock(c, blocks)
+	}
+	return c
 }
 
 func (sh *Shell) lastBlockLine(i int) int {

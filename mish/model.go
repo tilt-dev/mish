@@ -18,8 +18,11 @@ type Model struct {
 	QueuedFiles []string
 
 	// result of shmill'ing
-	Shmill     *Shmill
+	Shmill *Shmill
+	// Results of view
 	BlockSizes []int // block i has BlockSizes[i] many lines
+
+	ShmillHeight int
 
 	Autorun *dbpath.Matcher
 

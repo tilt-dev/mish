@@ -15,7 +15,7 @@ import (
 type View struct {
 }
 
-func (v *View) Render(m *Model) []int {
+func (v *View) Render(m *Model) ([]int, int) {
 	r := &Render{}
 	return r.Render(m)
 }
@@ -30,7 +30,7 @@ type Render struct {
 
 // Render renders the Model, and returns layout info the Controller
 // will use to scroll.
-func (r *Render) Render(m *Model) (blockSizes []int) {
+func (r *Render) Render(m *Model) (blockSizes []int, ShmillHeight int) {
 	r.maxX, r.maxY = termbox.Size()
 
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
@@ -42,7 +42,9 @@ func (r *Render) Render(m *Model) (blockSizes []int) {
 	r.renderFooter(m)
 
 	termbox.Flush()
-	return blockSizes
+
+	// Store terminal size on the model, because we need it for paging
+	return blockSizes, r.maxY - footerHeight
 }
 
 const footerHeight = 2
@@ -100,7 +102,7 @@ func (r *Render) renderFooter(m *Model) {
 	}
 
 	// Hotkeys
-	keys := fmt.Sprintf("BROWSE: [j] next, [k] prev, [o] show/hide  %s  SCROLL: [↑] Up, [↓] Down  %s  (r)erun  %s  (q)uit", divDot, divDot, divDot)
+	keys := fmt.Sprintf("BROWSE: [j] next, [k] prev, [o] show/hide  %s  SCROLL: [↑] Up, [↓] Down, [PgUp] page up, [PgDn] page down  %s  (r)erun  %s  (q)uit", divDot, divDot, divDot)
 	p.at(c.maxX-len(keys)+8, 1) // Unicode runes mess up the count
 	p.setColor(termbox.ColorDefault, termbox.ColorDefault)
 	p.text(keys)
