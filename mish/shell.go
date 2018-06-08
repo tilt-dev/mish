@@ -224,7 +224,7 @@ func (sh *Shell) startRun() {
 
 	ctx, cancelFunc := context.WithCancel(sh.ctx)
 	sh.shmillCancel = cancelFunc
-	sh.shmillCh = sh.shmill.Start(ctx)
+	sh.shmillCh = sh.shmill.Start(ctx, sh.model.SelectedTarget)
 }
 
 func stringsEq(a, b []string) bool {
@@ -258,6 +258,8 @@ func (sh *Shell) handleShmill(ev shmill.Event) error {
 			return err
 		}
 		sh.model.Autorun = m
+	case shmill.TargetsFoundEvent:
+		sh.model.Targets = ev.Targets
 	case shmill.CmdStartedEvent:
 		m.Evals = append(m.Evals, &Run{
 			cmd:   ev.Cmd,
@@ -301,6 +303,8 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 	switch event.Ch {
 	case 'r':
 		sh.startRun()
+	case 't':
+		sh.cycleTarget()
 	case 'j':
 		sh.model.Cursor.Block++
 		sh.model.Cursor.Line = 0
@@ -317,6 +321,38 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 			sh.model.Cursor.Line = 0
 		}
 	}
+}
+
+func (sh *Shell) cycleTarget() {
+	if len(sh.model.Targets) == 0 {
+		sh.model.SelectedTarget = ""
+		return
+	}
+
+	defer sh.startRun()
+
+	if sh.model.SelectedTarget == "" {
+		// we haven't selected a target yet
+		sh.model.SelectedTarget = sh.model.Targets[0]
+		return
+	}
+
+	currentIdx := -1
+	for i, t := range sh.model.Targets {
+		if t == sh.model.SelectedTarget {
+			currentIdx = i
+		}
+	}
+	if currentIdx == -1 {
+		// our selected target got deleted
+		sh.model.SelectedTarget = ""
+		return
+	}
+	currentIdx++
+	if currentIdx >= len(sh.model.Targets) {
+		currentIdx = 0
+	}
+	sh.model.SelectedTarget = sh.model.Targets[currentIdx]
 }
 
 // snapCursorToBlock makes the cursor point to a sensible position.

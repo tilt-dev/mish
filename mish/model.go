@@ -30,6 +30,9 @@ type Model struct {
 	Cursor    Cursor
 	Collapsed map[int]bool
 
+	Targets        []string
+	SelectedTarget string
+
 	Spinner *Spinner
 }
 

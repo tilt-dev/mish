@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"strings"
 
 	"github.com/windmilleng/skylurk"
 
@@ -31,6 +32,10 @@ type AutorunEvent struct {
 	Patterns []string
 }
 
+type TargetsFoundEvent struct {
+	Targets []string
+}
+
 type CmdStartedEvent struct {
 	// TODO(dbentley): UID
 	Cmd string
@@ -48,13 +53,14 @@ type ExecDoneEvent struct {
 	Err error
 }
 
-func (WatchStartEvent) shmillEvent() {}
-func (WatchDoneEvent) shmillEvent()  {}
-func (AutorunEvent) shmillEvent()    {}
-func (CmdStartedEvent) shmillEvent() {}
-func (CmdOutputEvent) shmillEvent()  {}
-func (CmdDoneEvent) shmillEvent()    {}
-func (ExecDoneEvent) shmillEvent()   {}
+func (WatchStartEvent) shmillEvent()   {}
+func (WatchDoneEvent) shmillEvent()    {}
+func (AutorunEvent) shmillEvent()      {}
+func (TargetsFoundEvent) shmillEvent() {}
+func (CmdStartedEvent) shmillEvent()   {}
+func (CmdOutputEvent) shmillEvent()    {}
+func (CmdDoneEvent) shmillEvent()      {}
+func (ExecDoneEvent) shmillEvent()     {}
 
 func NewShmill(fs fs.FSBridge, ptrID data.PointerID, dir string, panicCh chan error) *Shmill {
 	return &Shmill{fs: fs, ptrID: ptrID, dir: dir, panicCh: panicCh}
@@ -67,13 +73,14 @@ type Shmill struct {
 	panicCh chan error
 }
 
-func (sh *Shmill) Start(ctx context.Context) chan Event {
+func (sh *Shmill) Start(ctx context.Context, target string) chan Event {
 	ch := make(chan Event)
 	e := &ex{
 		ch:      ch,
 		ctx:     ctx,
 		shmill:  sh,
 		panicCh: sh.panicCh,
+		target:  target,
 	}
 
 	go e.exec()
@@ -86,11 +93,15 @@ const (
 	autorunN = "autorun"
 )
 
+const targetPrefix = "wf_"
+
 type ex struct {
 	ch      chan Event
 	ctx     context.Context
 	shmill  *Shmill
 	panicCh chan error
+
+	target string // which target to execute
 
 	watchCalled   bool
 	autorunCalled bool
@@ -116,11 +127,47 @@ func (e *ex) exec() (outerErr error) {
 	}
 	t := &skylurk.Thread{}
 	globals := e.builtins()
-	_, err = skylurk.ExecFile(t, pathutil.WMShMill, text, globals)
+	globals, err = skylurk.ExecFile(t, pathutil.WMShMill, text, globals)
 	if e.expectedErr {
 		// a command failed, but it's nbd and that information was captured elsewhere.
 		return nil
 	}
+	if err != nil {
+		return err
+	}
+
+	// we've now finished eval of top-level code.
+	// We know what targets there are, so report on those, and then run the selected target
+	var targets []string
+
+	for k, v := range globals {
+		if _, ok := v.(skylurk.Callable); strings.HasPrefix(k, targetPrefix) && ok {
+			if len(strings.TrimPrefix(k, targetPrefix)) == 0 {
+				return fmt.Errorf("global %v is an empty target name; give it a name", targetPrefix)
+			}
+			targets = append(targets, strings.TrimPrefix(k, targetPrefix))
+		}
+	}
+
+	e.ch <- TargetsFoundEvent{Targets: targets}
+
+	if e.target == "" {
+		return nil
+	}
+
+	globalName := targetPrefix + e.target
+	targetV, ok := globals[globalName]
+	if !ok {
+		return fmt.Errorf("target %s doesn't exist (no global %s)", e.target, globalName)
+	}
+
+	targetFunc, ok := targetV.(skylurk.Callable)
+	if !ok {
+		return fmt.Errorf("global %s is not a function; is a %T: %v", globalName, targetV, targetV)
+	}
+
+	_, err = targetFunc.Call(t, nil, nil)
+
 	return err
 }
 

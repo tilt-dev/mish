@@ -81,6 +81,9 @@ func (r *Render) renderFooter(m *Model) {
 	}
 	p.text(exec)
 
+	// selected target
+	p.text(fmt.Sprintf(" target: %s", m.SelectedTarget))
+
 	// Logo
 	p.at(c.maxX-len(logo), 0)
 	p.text(logo)
