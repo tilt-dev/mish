@@ -94,7 +94,6 @@ func Setup() (*Shell, error) {
 			File:      filepath.Join(dir, pathutil.WMShMill),
 			Now:       time.Now(),
 			HeadSnap:  data.EmptySnapshotID,
-			Autorun:   dbpath.NewFileMatcherOrPanic(pathutil.WMShMill),
 			Collapsed: make(map[int]bool),
 			Spinner:   &Spinner{Chars: []rune{'⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'}},
 		},
@@ -202,21 +201,8 @@ func (sh *Shell) handleEdit(head data.PointerAtRev) error {
 
 	sh.model.QueuedFiles = concatenateAndDedupe(sh.model.QueuedFiles, pathsChanged)
 
-	// if sh.shouldAutorun() {
-	// 	sh.startRun()
-	// }
-
 	return nil
 }
-
-// func (sh *Shell) shouldAutorun() bool {
-// 	for _, f := range sh.model.QueuedFiles {
-// 		if sh.model.Autorun.Match(f) {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
 
 func (sh *Shell) startRun() {
 	sh.model.Shmill = NewShmill()
@@ -245,22 +231,6 @@ func stringsEq(a, b []string) bool {
 func (sh *Shell) handleShmill(ev shmill.Event) error {
 	m := sh.model.Shmill
 	switch ev := ev.(type) {
-	case shmill.WatchStartEvent:
-		m.Evals = append(m.Evals, &Watch{
-			patterns: ev.Patterns,
-			output:   ev.Output,
-			start:    time.Now(),
-		})
-	case shmill.WatchDoneEvent:
-		w := m.Evals[len(m.Evals)-1].(*Watch)
-		w.done = true
-		w.duration = time.Now().Sub(w.start)
-	case shmill.AutorunEvent:
-		m, err := dbpath.NewMatcherFromPatterns(append(ev.Patterns, pathutil.WMShMill))
-		if err != nil {
-			return err
-		}
-		sh.model.Autorun = m
 	case shmill.TargetsFoundEvent:
 		sh.model.Targets = ev.Targets
 	case shmill.CmdStartedEvent:

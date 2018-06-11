@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/windmilleng/mish/data"
-	"github.com/windmilleng/mish/data/db/dbpath"
 )
 
 // Model of our MVC
@@ -23,8 +22,6 @@ type Model struct {
 	BlockSizes []int // block i has BlockSizes[i] many lines
 
 	ShmillHeight int
-
-	Autorun *dbpath.Matcher
 
 	// modified by keys
 	Cursor    Cursor
@@ -69,7 +66,7 @@ func NewShmill() *Shmill {
 }
 
 // Eval is an Evaluation the user might care about.
-// E.g. Run, Watch, Print.
+// E.g. Run, Print.
 type Eval interface {
 	eval()
 }
@@ -83,13 +80,4 @@ type Run struct {
 	err      error
 }
 
-type Watch struct {
-	output   string
-	patterns []string
-	start    time.Time
-	duration time.Duration
-	done     bool
-}
-
-func (*Run) eval()   {}
-func (*Watch) eval() {}
+func (*Run) eval() {}

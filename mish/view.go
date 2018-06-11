@@ -126,22 +126,14 @@ func (r *Render) renderShmill(m *Model) []int {
 			collapsed: m.Collapsed[i],
 		}
 
-		switch ev := ev.(type) {
-		case *Run:
-			b.headline = ev.cmd
-			b.done = ev.done
-			b.dur = ev.duration.Truncate(time.Millisecond).String()
-			b.err = ev.err
-			b.output = ev.output
-		case *Watch:
-			b.headline = fmt.Sprintf("watch %s", ev.patterns)
-			b.done = ev.done
-			b.dur = ev.duration.Truncate(time.Millisecond).String()
-			b.err = nil
-			b.output = ev.output
+		if e, ok := ev.(*Run); ok {
+			b.headline = e.cmd
+			b.done = e.done
+			b.dur = e.duration.Truncate(time.Millisecond).String()
+			b.err = e.err
+			b.output = e.output
+			bs = append(bs, b)
 		}
-
-		bs = append(bs, b)
 	}
 
 	if sh.Err != nil {
