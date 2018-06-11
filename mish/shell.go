@@ -199,21 +199,21 @@ func (sh *Shell) handleEdit(head data.PointerAtRev) error {
 
 	sh.model.QueuedFiles = concatenateAndDedupe(sh.model.QueuedFiles, pathsChanged)
 
-	if sh.shouldAutorun() {
-		sh.startRun()
-	}
+	// if sh.shouldAutorun() {
+	// 	sh.startRun()
+	// }
 
 	return nil
 }
 
-func (sh *Shell) shouldAutorun() bool {
-	for _, f := range sh.model.QueuedFiles {
-		if sh.model.Autorun.Match(f) {
-			return true
-		}
-	}
-	return false
-}
+// func (sh *Shell) shouldAutorun() bool {
+// 	for _, f := range sh.model.QueuedFiles {
+// 		if sh.model.Autorun.Match(f) {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 
 func (sh *Shell) startRun() {
 	sh.model.Shmill = NewShmill()

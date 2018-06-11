@@ -13,7 +13,6 @@ import (
 	"github.com/windmilleng/mish/data"
 	"github.com/windmilleng/mish/data/pathutil"
 	"github.com/windmilleng/mish/errors"
-	"github.com/windmilleng/mish/os/ospath"
 )
 
 type Event interface {
@@ -103,9 +102,9 @@ type ex struct {
 
 	target string // which target to execute
 
-	watchCalled   bool
-	autorunCalled bool
-	runAlready    bool // whether a run has already happened
+	// watchCalled   bool
+	// autorunCalled bool
+	runAlready bool // whether a run has already happened
 
 	// exec encountered an expected error (i.e. from a failed command), don't
 	// report it as a top-level error
@@ -173,17 +172,17 @@ func (e *ex) exec() (outerErr error) {
 
 func (e *ex) builtins() skylurk.StringDict {
 	return skylurk.StringDict{
-		shN:      skylurk.NewBuiltin(shN, e.Sh),
-		watchN:   skylurk.NewBuiltin(watchN, e.Watch),
-		autorunN: skylurk.NewBuiltin(autorunN, e.Autorun),
+		shN: skylurk.NewBuiltin(shN, e.Sh),
+		// watchN:   skylurk.NewBuiltin(watchN, e.Watch),
+		// autorunN: skylurk.NewBuiltin(autorunN, e.Autorun),
 	}
 }
 
 func (e *ex) Sh(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple, kwargs []skylurk.Tuple) (skylurk.Value, error) {
 	if !e.runAlready {
-		if err := e.watch([]string{pathutil.WMShMill}, true); err != nil {
-			return nil, err
-		}
+		// if err := e.watch([]string{pathutil.WMShMill}, true); err != nil {
+		// 	return nil, err
+		// }
 		e.runAlready = true
 	}
 	var cmd string
@@ -220,84 +219,84 @@ func (e *ex) Sh(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple,
 	return skylurk.None, nil
 }
 
-func (e *ex) Watch(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple, kwargs []skylurk.Tuple) (skylurk.Value, error) {
-	var patterns []string
+// func (e *ex) Watch(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple, kwargs []skylurk.Tuple) (skylurk.Value, error) {
+// 	var patterns []string
 
-	for i, p := range args {
-		s, ok := p.(skylurk.String)
-		if !ok {
-			return nil, fmt.Errorf("argument %d to `watch` is not a string: %v %T", i, p, p)
-		}
-		patterns = append(patterns, string(s))
-	}
+// 	for i, p := range args {
+// 		s, ok := p.(skylurk.String)
+// 		if !ok {
+// 			return nil, fmt.Errorf("argument %d to `watch` is not a string: %v %T", i, p, p)
+// 		}
+// 		patterns = append(patterns, string(s))
+// 	}
 
-	if err := e.watch(patterns, false); err != nil {
-		return nil, err
-	}
+// 	if err := e.watch(patterns, false); err != nil {
+// 		return nil, err
+// 	}
 
-	return skylurk.None, nil
-}
+// 	return skylurk.None, nil
+// }
 
-func (e *ex) watch(patterns []string, implicit bool) error {
-	if e.runAlready {
-		return fmt.Errorf("watch must be called before the first run")
-	}
+// func (e *ex) watch(patterns []string, implicit bool) error {
+// 	if e.runAlready {
+// 		return fmt.Errorf("watch must be called before the first run")
+// 	}
 
-	if e.watchCalled {
-		if implicit {
-			return nil
-		}
-		return fmt.Errorf("watch may only be called once in your Millfile")
-	}
-	e.watchCalled = true
+// 	if e.watchCalled {
+// 		if implicit {
+// 			return nil
+// 		}
+// 		return fmt.Errorf("watch may only be called once in your Millfile")
+// 	}
+// 	e.watchCalled = true
 
-	m, err := ospath.NewMatcherFromPatterns(patterns)
-	if err != nil {
-		return err
-	}
+// 	m, err := ospath.NewMatcherFromPatterns(patterns)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	output := ""
-	if implicit {
-		output = fmt.Sprintf("Implicit watch(%s)\n", pathutil.WMShMill)
-	}
-	if !m.Match(pathutil.WMShMill) {
-		output = fmt.Sprintf("%sWarning: you are not watching %s\n", output, pathutil.WMShMill)
-	}
+// 	output := ""
+// 	if implicit {
+// 		output = fmt.Sprintf("Implicit watch(%s)\n", pathutil.WMShMill)
+// 	}
+// 	if !m.Match(pathutil.WMShMill) {
+// 		output = fmt.Sprintf("%sWarning: you are not watching %s\n", output, pathutil.WMShMill)
+// 	}
 
-	e.ch <- WatchStartEvent{
-		Patterns: patterns,
-		Output:   output,
-	}
+// 	e.ch <- WatchStartEvent{
+// 		Patterns: patterns,
+// 		Output:   output,
+// 	}
 
-	err = e.shmill.fs.ToWMStart(e.ctx, e.shmill.dir, e.shmill.ptrID, m)
-	e.ch <- WatchDoneEvent{}
+// 	err = e.shmill.fs.ToWMStart(e.ctx, e.shmill.dir, e.shmill.ptrID, m)
+// 	e.ch <- WatchDoneEvent{}
 
-	return err
-}
+// 	return err
+// }
 
-func (e *ex) Autorun(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple, kwargs []skylurk.Tuple) (skylurk.Value, error) {
-	var patterns []string
+// func (e *ex) Autorun(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple, kwargs []skylurk.Tuple) (skylurk.Value, error) {
+// 	var patterns []string
 
-	if e.runAlready {
-		return nil, fmt.Errorf("autorun must be called before the first run")
-	}
+// 	if e.runAlready {
+// 		return nil, fmt.Errorf("autorun must be called before the first run")
+// 	}
 
-	if e.autorunCalled {
-		return nil, fmt.Errorf("autorun may only be called once in your Millfile")
-	}
-	e.autorunCalled = true
+// 	if e.autorunCalled {
+// 		return nil, fmt.Errorf("autorun may only be called once in your Millfile")
+// 	}
+// 	e.autorunCalled = true
 
-	for i, p := range args {
-		s, ok := p.(skylurk.String)
-		if !ok {
-			return nil, fmt.Errorf("argument %d to `autorun` is not a string: %v %T", i, p, p)
-		}
-		patterns = append(patterns, string(s))
-	}
+// 	for i, p := range args {
+// 		s, ok := p.(skylurk.String)
+// 		if !ok {
+// 			return nil, fmt.Errorf("argument %d to `autorun` is not a string: %v %T", i, p, p)
+// 		}
+// 		patterns = append(patterns, string(s))
+// 	}
 
-	e.ch <- AutorunEvent{Patterns: patterns}
-	return skylurk.None, nil
-}
+// 	e.ch <- AutorunEvent{Patterns: patterns}
+// 	return skylurk.None, nil
+// }
 
 type exWriter struct {
 	ch chan Event
