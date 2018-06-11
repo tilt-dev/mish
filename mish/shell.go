@@ -135,6 +135,9 @@ func (sh *Shell) Run() error {
 	sh.timeCh = time.Tick(time.Second)
 	defer sh.cancelCmd()
 
+	// run what the mill script currently contains
+	sh.startRun()
+	// then await input
 	for {
 		select {
 		case head := <-sh.editCh:
