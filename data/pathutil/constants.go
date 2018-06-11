@@ -1,4 +1,4 @@
 package pathutil
 
 const WMConfig = ".wmconfig"
-const WMShMill = "Millfile"
+const WMShMill = "notes.mill"
