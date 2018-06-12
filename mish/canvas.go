@@ -66,7 +66,13 @@ func (c *scrollCanvas) RenderAt(screenY, numLines, startLine int) {
 		return
 	}
 
-	highlightCells(c.lines[startLine], termbox.ColorWhite, termbox.ColorBlue)
+	if startLine < len(c.lines) {
+		// if we can highlight the line we were highlighting, highlight that
+		highlightCells(c.lines[startLine], termbox.ColorWhite, termbox.ColorBlue)
+	} else {
+		// otherwise highlight the last available line
+		highlightCells(c.lines[len(c.lines)-1], termbox.ColorWhite, termbox.ColorBlue)
+	}
 
 	// Don't keep scrolling if there is no content
 	if len(c.lines)-startLine < numLines || len(c.lines)-startLine < 0 {
