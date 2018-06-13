@@ -125,7 +125,6 @@ func (sh *Shell) cancelCmd() {
 				// wait for os/exec to tell us that this is done
 				for _ = range sh.shmillCh {
 				}
-				time.Sleep(4 * time.Second)
 				c <- struct{}{}
 			}()
 
