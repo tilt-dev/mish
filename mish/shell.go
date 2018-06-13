@@ -117,12 +117,23 @@ func setupMirror(ctx context.Context, fs fs.FSBridge, dir string, ptrID data.Poi
 
 func (sh *Shell) cancelCmd() {
 	if sh.shmillCancel != nil {
-		// TODO(dmiller) have a timeout for this
-		// maybe a ui if it takes too long?
+		// TODO(dmiller) maybe a ui if it takes too long?
+		c := make(chan interface{}, 1)
 		sh.shmillCancel()
 		if sh.shmillCh != nil {
-			for _ = range sh.shmillCh {
+			go func() {
 				// wait for os/exec to tell us that this is done
+				for _ = range sh.shmillCh {
+				}
+				time.Sleep(4 * time.Second)
+				c <- struct{}{}
+			}()
+
+			select {
+			case _ = <-c:
+				return
+			case <-time.After(3 * time.Second):
+				return
 			}
 		}
 	}
