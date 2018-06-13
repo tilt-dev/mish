@@ -10,7 +10,7 @@ import (
 
 	"github.com/windmilleng/mish/bridge/fs"
 	"github.com/windmilleng/mish/bridge/fs/fss"
-	"github.com/windmilleng/mish/daemon"
+	"github.com/windmilleng/mish/cli/dirs"
 	"github.com/windmilleng/mish/data"
 	"github.com/windmilleng/mish/data/db/db2"
 	"github.com/windmilleng/mish/data/db/dbint"
@@ -47,7 +47,7 @@ var ptrID = data.MustNewPointerID(data.AnonymousID, "mirror", data.UserPtr)
 func Setup() (*Shell, error) {
 	ctx := context.Background()
 
-	wmDir, err := daemon.WindmillDir()
+	wmDir, err := dirs.GetWindmillDir()
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +127,7 @@ func (sh *Shell) cancelCmd() {
 		}
 	}
 }
+
 func (sh *Shell) Run() error {
 	defer termbox.Close()
 	go sh.waitForEdits()
