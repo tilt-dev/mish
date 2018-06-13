@@ -259,6 +259,37 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 	if event.Type != termbox.EventKey {
 		return
 	}
+
+	if event.Ch == 't' {
+		sh.model.ShowFlowChooser = !sh.model.ShowFlowChooser
+	}
+
+	if sh.model.ShowFlowChooser {
+		sh.handleTermForFlowChooser(event)
+		return
+	}
+
+	sh.handleTerminalForShmill(event)
+}
+
+func (sh *Shell) handleTermForFlowChooser(event termbox.Event) {
+	switch event.Key {
+	case termbox.KeyArrowUp:
+		sh.model.FlowChooserPos--
+		sh.cycleFlowChooserPos()
+	case termbox.KeyArrowDown:
+		sh.model.FlowChooserPos++
+		sh.cycleFlowChooserPos()
+	}
+
+	switch event.Ch {
+	case 'r':
+		sh.model.ShowFlowChooser = !sh.model.ShowFlowChooser
+		sh.runFlow()
+	}
+}
+
+func (sh *Shell) handleTerminalForShmill(event termbox.Event) {
 	switch event.Key {
 	case termbox.KeyArrowUp:
 		sh.model.Cursor.Line--
@@ -277,8 +308,6 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 	switch event.Ch {
 	case 'r':
 		sh.startRun()
-	case 't':
-		sh.cycleTarget()
 	case 'j':
 		sh.model.Cursor.Block++
 		sh.model.Cursor.Line = 0
@@ -297,36 +326,25 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 	}
 }
 
-func (sh *Shell) cycleTarget() {
-	if len(sh.model.Targets) == 0 {
-		sh.model.SelectedTarget = ""
-		return
+func (sh *Shell) cycleFlowChooserPos() {
+	if sh.model.FlowChooserPos < 0 {
+		sh.model.FlowChooserPos = len(sh.model.Targets)
 	}
 
+	if sh.model.FlowChooserPos > len(sh.model.Targets) {
+		sh.model.FlowChooserPos = 0
+	}
+}
+
+func (sh *Shell) runFlow() {
 	defer sh.startRun()
 
-	if sh.model.SelectedTarget == "" {
-		// we haven't selected a target yet
-		sh.model.SelectedTarget = sh.model.Targets[0]
-		return
-	}
-
-	currentIdx := -1
-	for i, t := range sh.model.Targets {
-		if t == sh.model.SelectedTarget {
-			currentIdx = i
-		}
-	}
-	if currentIdx == -1 {
-		// our selected target got deleted
+	if sh.model.FlowChooserPos == 0 {
 		sh.model.SelectedTarget = ""
 		return
 	}
-	currentIdx++
-	if currentIdx >= len(sh.model.Targets) {
-		currentIdx = 0
-	}
-	sh.model.SelectedTarget = sh.model.Targets[currentIdx]
+
+	sh.model.SelectedTarget = sh.model.Targets[sh.model.FlowChooserPos-1]
 }
 
 // snapCursorToBlock makes the cursor point to a sensible position.

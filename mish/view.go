@@ -41,6 +41,8 @@ func (r *Render) Render(m *Model) (blockSizes []int, ShmillHeight int) {
 
 	r.renderFooter(m)
 
+	r.maybeRenderFlowChooser(m)
+
 	termbox.Flush()
 
 	// Store terminal size on the model, because we need it for paging
@@ -82,35 +84,88 @@ func (r *Render) renderFooter(m *Model) {
 	p.text(exec)
 
 	// selected target
-	p.text(fmt.Sprintf(" target: %s", m.SelectedTarget))
+	flow := m.SelectedTarget
+	if m.SelectedTarget == "" {
+		flow = "None"
+	}
+
+	p.text(fmt.Sprintf(" %s Flow: %s", div, flow))
 
 	// Logo
 	p.at(c.maxX-len(logo), 0)
 	p.text(logo)
 
 	// Queued Files
-	p.at(len(rev)+len(exec), 0)
-	if len(m.QueuedFiles) > 0 {
-		s := fmt.Sprint(m.QueuedFiles[0])
-		if len(m.QueuedFiles) > 1 {
-			s = fmt.Sprintf("%s (+%d)", m.QueuedFiles[0], len(m.QueuedFiles)-1)
-		}
+	// p.at(len(rev)+len(exec), 0)
+	// if len(m.QueuedFiles) > 0 {
+	// 	s := fmt.Sprint(m.QueuedFiles[0])
+	// 	if len(m.QueuedFiles) > 1 {
+	// 		s = fmt.Sprintf("%s (+%d)", m.QueuedFiles[0], len(m.QueuedFiles)-1)
+	// 	}
 
-		msg := fmt.Sprintf(" %s Queued: %s", div, s)
-		if len(msg) > (c.maxX - len(rev) - len(exec) - len(logo)) {
-			msg = fmt.Sprintf(" %s %s", div, s)
-		}
+	// 	msg := fmt.Sprintf(" %s Queued: %s", div, s)
+	// 	if len(msg) > (c.maxX - len(rev) - len(exec) - len(logo)) {
+	// 		msg = fmt.Sprintf(" %s %s", div, s)
+	// 	}
 
-		p.text(msg)
-	}
+	// 	p.text(msg)
+	// }
 
 	// Hotkeys
+
 	keys := fmt.Sprintf("BROWSE: [j] next, [k] prev, [o] show/hide  %s  SCROLL: [↑] Up, [↓] Down, [PgUp] page up, [PgDn] page down  %s  (r)erun  %s  (q)uit", divDot, divDot, divDot)
-	p.at(c.maxX-len(keys)+8, 1) // Unicode runes mess up the count
+	if m.ShowFlowChooser {
+		keys = fmt.Sprintf("BROWSE: [↑] Up, [↓] Down  %s  (r)un", divDot)
+	}
+	p.at(1, 1)
 	p.setColor(termbox.ColorDefault, termbox.ColorDefault)
 	p.text(keys)
 
 	c.RenderAt(0, r.maxY-footerHeight)
+}
+
+func (r *Render) maybeRenderFlowChooser(m *Model) {
+	if !m.ShowFlowChooser {
+		return
+	}
+
+	chooserHeight := len(m.Targets) + 2
+	c := newBoxCanvas(r.maxX, chooserHeight)
+	p := newPen(c)
+
+	// header
+	p.setColor(termbox.ColorBlack, termbox.ColorWhite)
+	for x := 0; x < c.maxX; x++ {
+		p.ch(0)
+	}
+	p.at(1, 0)
+	p.text("Choose Flow:")
+
+	cur := fmt.Sprintf("(%d/%d)", m.FlowChooserPos, len(m.Targets))
+	p.at(r.maxX-len(cur)-1, 0)
+	p.text(cur)
+
+	// list flows
+	p.resetColor()
+	p.at(3, 1)
+	p.text("(None)")
+	if m.FlowChooserPos == 0 {
+		p.at(1, 1)
+		p.text("▸")
+	}
+
+	for i, f := range m.Targets {
+		gap := 2 // make room for header and (none) option
+		if i == m.FlowChooserPos-1 {
+			p.at(1, i+gap)
+			p.text("▸")
+		}
+
+		p.at(3, i+gap)
+		p.text(f)
+	}
+
+	c.RenderAt(0, r.maxY-chooserHeight-footerHeight)
 }
 
 func (r *Render) renderShmill(m *Model) []int {

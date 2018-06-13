@@ -18,17 +18,20 @@ type Model struct {
 
 	// result of shmill'ing
 	Shmill *Shmill
-	// Results of view
-	BlockSizes []int // block i has BlockSizes[i] many lines
 
+	// byproducts of shmill
+	BlockSizes   []int // block i has BlockSizes[i] many lines
 	ShmillHeight int
 
 	// modified by keys
 	Cursor    Cursor
 	Collapsed map[int]bool
 
-	Targets        []string
-	SelectedTarget string
+	// select flow to exec
+	ShowFlowChooser bool
+	FlowChooserPos  int
+	Targets         []string
+	SelectedTarget  string
 
 	Spinner *Spinner
 }
