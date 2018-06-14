@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"github.com/windmilleng/skylurk"
 
@@ -167,26 +168,38 @@ func (e *ex) Sh(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple,
 	}
 
 	w := &exWriter{ch: e.ch}
-	c := exec.CommandContext(e.ctx, "bash", "-c", cmd)
+	doneCh := make(chan error, 1)
+	c := exec.Command("bash", "-c", cmd)
+	c.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	c.Stdout = w
 	c.Stderr = w
 
-	e.ch <- CmdStartedEvent{Cmd: cmd}
-	err := c.Run()
-	e.ch <- CmdDoneEvent{Err: err}
+	// run the command
+	go func() {
+		e.ch <- CmdStartedEvent{Cmd: cmd}
+		doneCh <- c.Run()
+	}()
 
-	if err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			// NOT just a failed command, something has actually gone wrong.
-			return skylurk.None, err
+	// wait for command to be finished
+	// OR ctx.Done
+	select {
+	case err := <-doneCh:
+		e.ch <- CmdDoneEvent{Err: err}
+		if err != nil {
+			if _, ok := err.(*exec.ExitError); !ok {
+				// NOT just a failed command, something has actually gone wrong.
+				return skylurk.None, err
+			}
+			if !tolerateFailure {
+				// The cmd exited with non-zero code. This cmd doesn't tolerate failure, so
+				// return this err back up the stack (which kills this exec) -- but set
+				// expectedErr flag so we don't freak out.
+				e.expectedErr = true
+				return skylurk.None, err
+			}
 		}
-		if !tolerateFailure {
-			// The cmd exited with non-zero code. This cmd doesn't tolerate failure, so
-			// return this err back up the stack (which kills this exec) -- but set
-			// expectedErr flag so we don't freak out.
-			e.expectedErr = true
-			return skylurk.None, err
-		}
+	case <-e.ctx.Done():
+		syscall.Kill(-c.Process.Pid, syscall.SIGKILL)
 	}
 
 	return skylurk.None, nil
