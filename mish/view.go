@@ -64,8 +64,19 @@ func (r *Render) renderFooter(m *Model) {
 		p.ch(0)
 	}
 
-	// Revision
+	// Current Flow
 	p.at(1, 0)
+	flow := m.SelectedFlow
+	if m.SelectedFlow == "" {
+		flow = "None"
+	}
+	if m.ShowFlowChooser {
+		flow += "…"
+	}
+
+	p.text(fmt.Sprintf("Flow: %s %s ", flow, div))
+
+	// Revision
 	rev := fmt.Sprintf("Revision %d %s ", m.Rev, div)
 	p.text(rev)
 
@@ -83,37 +94,12 @@ func (r *Render) renderFooter(m *Model) {
 	}
 	p.text(exec)
 
-	// selected target
-	flow := m.SelectedTarget
-	if m.SelectedTarget == "" {
-		flow = "None"
-	}
-
-	p.text(fmt.Sprintf(" %s Flow: %s", div, flow))
-
 	// Logo
 	p.at(c.maxX-len(logo), 0)
 	p.text(logo)
 
-	// Queued Files
-	// p.at(len(rev)+len(exec), 0)
-	// if len(m.QueuedFiles) > 0 {
-	// 	s := fmt.Sprint(m.QueuedFiles[0])
-	// 	if len(m.QueuedFiles) > 1 {
-	// 		s = fmt.Sprintf("%s (+%d)", m.QueuedFiles[0], len(m.QueuedFiles)-1)
-	// 	}
-
-	// 	msg := fmt.Sprintf(" %s Queued: %s", div, s)
-	// 	if len(msg) > (c.maxX - len(rev) - len(exec) - len(logo)) {
-	// 		msg = fmt.Sprintf(" %s %s", div, s)
-	// 	}
-
-	// 	p.text(msg)
-	// }
-
 	// Hotkeys
-
-	keys := fmt.Sprintf("BROWSE: [j] next, [k] prev, [o] show/hide  %s  SCROLL: [↑] Up, [↓] Down, [PgUp] page up, [PgDn] page down  %s  (r)erun  %s  (q)uit", divDot, divDot, divDot)
+	keys := fmt.Sprintf("BROWSE: [j] next, [k] prev, [o] show/hide  %s  SCROLL: [↑] Up, [↓] Down, [PageUp], [PageDown]  %s  (r)erun  %s  choose (f)low  %s  (q)uit", divDot, divDot, divDot, divDot)
 	if m.ShowFlowChooser {
 		keys = fmt.Sprintf("BROWSE: [↑] Up, [↓] Down  %s  (r)un", divDot)
 	}
@@ -129,7 +115,7 @@ func (r *Render) maybeRenderFlowChooser(m *Model) {
 		return
 	}
 
-	chooserHeight := len(m.Targets) + 2
+	chooserHeight := len(m.Flows) + 2
 	c := newBoxCanvas(r.maxX, chooserHeight)
 	p := newPen(c)
 
@@ -141,7 +127,7 @@ func (r *Render) maybeRenderFlowChooser(m *Model) {
 	p.at(1, 0)
 	p.text("Choose Flow:")
 
-	cur := fmt.Sprintf("(%d/%d)", m.FlowChooserPos, len(m.Targets))
+	cur := fmt.Sprintf("(%d/%d)", m.FlowChooserPos, len(m.Flows))
 	p.at(r.maxX-len(cur)-1, 0)
 	p.text(cur)
 
@@ -154,7 +140,7 @@ func (r *Render) maybeRenderFlowChooser(m *Model) {
 		p.text("▸")
 	}
 
-	for i, f := range m.Targets {
+	for i, f := range m.Flows {
 		gap := 2 // make room for header and (none) option
 		if i == m.FlowChooserPos-1 {
 			p.at(1, i+gap)

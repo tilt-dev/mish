@@ -224,7 +224,7 @@ func (sh *Shell) startRun() {
 
 	ctx, cancelFunc := context.WithCancel(sh.ctx)
 	sh.shmillCancel = cancelFunc
-	sh.shmillCh = sh.shmill.Start(ctx, sh.model.SelectedTarget)
+	sh.shmillCh = sh.shmill.Start(ctx, sh.model.SelectedFlow)
 }
 
 func stringsEq(a, b []string) bool {
@@ -243,7 +243,7 @@ func (sh *Shell) handleShmill(ev shmill.Event) error {
 	m := sh.model.Shmill
 	switch ev := ev.(type) {
 	case shmill.TargetsFoundEvent:
-		sh.model.Targets = ev.Targets
+		sh.model.Flows = ev.Targets
 	case shmill.CmdStartedEvent:
 		m.Evals = append(m.Evals, &Run{
 			cmd:   ev.Cmd,
@@ -270,7 +270,7 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 		return
 	}
 
-	if event.Ch == 't' {
+	if event.Ch == 'f' {
 		sh.model.ShowFlowChooser = !sh.model.ShowFlowChooser
 	}
 
@@ -290,13 +290,21 @@ func (sh *Shell) handleTermForFlowChooser(event termbox.Event) {
 	case termbox.KeyArrowDown:
 		sh.model.FlowChooserPos++
 		sh.cycleFlowChooserPos()
+	case termbox.KeyEsc:
+		sh.model.ShowFlowChooser = false
+	case termbox.KeyEnter:
+		sh.runSelectedFlow()
 	}
 
 	switch event.Ch {
 	case 'r':
-		sh.model.ShowFlowChooser = !sh.model.ShowFlowChooser
-		sh.runFlow()
+		sh.runSelectedFlow()
 	}
+}
+
+func (sh *Shell) runSelectedFlow() {
+	sh.model.ShowFlowChooser = !sh.model.ShowFlowChooser
+	sh.runFlow()
 }
 
 func (sh *Shell) handleTerminalForShmill(event termbox.Event) {
@@ -338,10 +346,10 @@ func (sh *Shell) handleTerminalForShmill(event termbox.Event) {
 
 func (sh *Shell) cycleFlowChooserPos() {
 	if sh.model.FlowChooserPos < 0 {
-		sh.model.FlowChooserPos = len(sh.model.Targets)
+		sh.model.FlowChooserPos = len(sh.model.Flows)
 	}
 
-	if sh.model.FlowChooserPos > len(sh.model.Targets) {
+	if sh.model.FlowChooserPos > len(sh.model.Flows) {
 		sh.model.FlowChooserPos = 0
 	}
 }
@@ -350,11 +358,11 @@ func (sh *Shell) runFlow() {
 	defer sh.startRun()
 
 	if sh.model.FlowChooserPos == 0 {
-		sh.model.SelectedTarget = ""
+		sh.model.SelectedFlow = ""
 		return
 	}
 
-	sh.model.SelectedTarget = sh.model.Targets[sh.model.FlowChooserPos-1]
+	sh.model.SelectedFlow = sh.model.Flows[sh.model.FlowChooserPos-1]
 }
 
 // snapCursorToBlock makes the cursor point to a sensible position.

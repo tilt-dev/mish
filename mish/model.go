@@ -30,8 +30,8 @@ type Model struct {
 	// select flow to exec
 	ShowFlowChooser bool
 	FlowChooserPos  int
-	Targets         []string
-	SelectedTarget  string
+	Flows           []string
+	SelectedFlow    string
 
 	Spinner *Spinner
 }
