@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/windmilleng/skylurk"
 
@@ -199,7 +200,17 @@ func (e *ex) Sh(thread *skylurk.Thread, fn *skylurk.Builtin, args skylurk.Tuple,
 			}
 		}
 	case <-e.ctx.Done():
-		syscall.Kill(-c.Process.Pid, syscall.SIGKILL)
+		err := syscall.Kill(c.Process.Pid, syscall.SIGINT)
+		if err != nil {
+			killPG(c)
+		} else {
+			// wait and then send SIGKILL to the process group, unless the command finished
+			select {
+			case <-time.After(50 * time.Millisecond):
+				killPG(c)
+			case <-doneCh:
+			}
+		}
 	}
 
 	return skylurk.None, nil
@@ -212,4 +223,8 @@ type exWriter struct {
 func (w *exWriter) Write(p []byte) (int, error) {
 	w.ch <- CmdOutputEvent{Output: string(p)}
 	return len(p), nil
+}
+
+func killPG(c *exec.Cmd) {
+	syscall.Kill(-c.Process.Pid, syscall.SIGKILL)
 }
