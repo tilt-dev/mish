@@ -52,8 +52,13 @@ There are a few other unique things you can do with mish.
 ### Use functions to run different shell commands
 Mish functions are called workflows and are prefixed by `wf_`. Once you've defined workflows in your notes.mill, you can run them within mish by pressing `f`, cycling through with your arrow keys, and pressing `r` to run. If your command is defined outside of a function, it will run automatically.
 
+![mish flows demo gif](https://user-images.githubusercontent.com/4122993/41476760-7c4f0a6c-7090-11e8-94c4-32607137ef34.gif)
+
 ### Run two mishes at once
 You can use two mish windows to run a server and simultanously run commands on that server. Also, by implementing workflows in your notes.mill, you can edit the server and commands you're running and rerun it easily.
+
+![double mish demo gif](https://user-images.githubusercontent.com/4122993/41477185-8d64737c-7091-11e8-9881-acfa668874aa.gif)
+
 
 ### Example notes.mill
 ```python
