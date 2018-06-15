@@ -14,32 +14,26 @@ go get -u github.com/windmilleng/mish/cmd/mish
 
 ## Using `mish`
 
-Configuration happens in your `Millfile`. Make one to get started:
+Configuration happens in your `notes.mill`. Make one to get started:
 ```bash
-echo "sh(\"echo hello world\")" > Millfile
+echo "sh(\"echo hello world\")" > notes.mill
 ```
 
 ### Hotkeys
 * `↓`/`↑`: scroll down/up
+* `PgDn`/`PgUp`: page down/up
 * `j`/`k`: jump down/up one command
 * `o`: expand/collapse current command output
-* `r`: run your Millfile
+* `r`: run your notes.mill
+* `f`: select a function to run from your notes.mill
 * `q`: quit
 
 ### Available Mill Functions
 * `sh`: execute arbitrary shell commands
   * `sh("my shell command")`
   * Normally, when a your shell commands exits with a non-zero status code, `mish` will abort the whole execution. To continue execution if a given command fails, specify `sh("faily command", tolerate_failure=True)`
-* Filesystem interaction:
-  * `watch`: specify files to watch. Edits to these files will be displayed in the `mish` status bar.
-  * `autorun`: specify files that will trigger rerunning of your Millfile. (Autorun works based on what's been `watch`'ed; you must `watch` a file before `autorun`'ing it.)
-  * _patterns_: `watch` and `autorun` each specify files by taking any number of _patterns_. A _pattern_ is a string that matches files.
-    * The wildcard `*` expands to any text in a directory. `"foo/*.go"` matches all go files in the directory `foo`
-    * The wildcard `**` expands to match any number of directories. `"**/*.go"` matches all go files in this directory or subdirectories.
-    * _patterns_ match files, not directories. If `foo` is a directory, `"foo"` will not match any files. (Use `"foo/**"`)
-    * If a _pattern_ starts with "!", its an inversion. `watch('**', '!.git/**')` will watch all files, except your `.git` directory.
 
-### Example Millfile
+### Example notes.mill
 ```python
 ### Configs
 watch("**", "!.git/**")
@@ -52,12 +46,33 @@ sh("go test server", tolerate_failure=True) # if this exits w/ non-zero code, ke
 sh("go test common")
 ```
 
+## Fun with Mish
+There are a few other unique things you can do with mish.
+
+### Use functions to run different shell commands
+Mish functions are called workflows and are prefixed by `wf_`. Once you've defined workflows in your notes.mill, you can run them within mish by pressing `f`, cycling through with your arrow keys, and pressing `r` to run. If your command is defined outside of a function, it will run automatically.
+
+### Run two mishes at once
+You can use two mish windows to run a server and simultanously run commands on that server. Also, by implementing workflows in your notes.mill, you can edit the server and commands you're running and rerun it easily.
+
+### Example notes.mill
+```python
+def wf_curlserver():
+  sh("curl localhost:8080")
+
+def wf_jsserver():
+  sh("node ./server.js")
+
+def wf_goserver():
+  sh("go run ./main.go")
+```
+
 ## Tell Us What You Think!
 Tried `mish`? Loved it? Hated it? Couldn't get past the install? [**Take our survey**](https://docs.google.com/forms/d/e/1FAIpQLSf8UXLG0FOeMswoW7LuUP02CeUwKBccJishJKDE_VyOqe7g_g/viewform?usp=sf_link) and tell us about your experience. Your feedback will help us make dev tools better for everyone!
 
 ### Guiding Questions for Alpha Users
 If you're one of our amazing alpha users, thank you! We appreciate you taking the time to test our product and give us feedback. Here are some things that we'd love for you to keep in mind as you test out `mish` so we can pick your brain about them later:
-1. When do you find yourself editing your Millfile? If it occurs to you to edit your Millfile and you don’t, why?
+1. When do you find yourself editing your notes.mill? If it occurs to you to edit your notes.mill and you don’t, why?
 2. When are you still using your shell instead of mish? Why?
 3. Did you get annoyed/distracted by `mish`, or turn it off?
 4. How does writing in Mill (our configuration language) feel? Intuitive? Annoying?
