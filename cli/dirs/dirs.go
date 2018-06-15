@@ -96,3 +96,19 @@ func (d *WindmillDir) ReadFile(p string) (string, error) {
 
 	return string(bs), nil
 }
+
+func (d *WindmillDir) MkdirAll(p string) error {
+	if filepath.IsAbs(p) {
+		return fmt.Errorf("WindmillDir.MkdirAll: p must be relative to .windmill root: %v", p)
+	}
+
+	return os.MkdirAll(filepath.Join(d.dir, p), os.FileMode(0700))
+}
+
+func (d *WindmillDir) Abs(p string) (string, error) {
+	if filepath.IsAbs(p) {
+		return "", fmt.Errorf("WindmillDir.Abs: p must be relative to .windmill root: %v", p)
+	}
+
+	return filepath.Join(d.dir, p), nil
+}

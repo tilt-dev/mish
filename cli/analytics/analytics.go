@@ -2,13 +2,42 @@ package analytics
 
 import (
 	"fmt"
+	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/windmilleng/mish/cli/dirs"
 )
 
-func Init() (Analytics, *cobra.Command, error) {
+func Init(appName string) (Analytics, *cobra.Command, error) {
 	c, err := initCLI()
-	return newMemoryAnalytics(), c, err
+
+	d, err := dirs.UseWindmillDir()
+	if err != nil {
+		return nil, nil, err
+	}
+	appDir := filepath.Join("analytics", appName)
+	if err := d.MkdirAll(appDir); err != nil {
+		return nil, nil, err
+	}
+
+	dbName, err := d.Abs(filepath.Join(appDir, "db"))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	b, err := newBoltByteEventStore(dbName)
+	if err != nil {
+		return nil, nil, err
+	}
+	m, err := NewMarshalingEventStore(b)
+	if err != nil {
+		return nil, nil, err
+	}
+	s := newMemoryEventStore()
+	comp := newCompositeEventWriter(s, m)
+	return newStoreAnalytics(comp), c, err
 }
 
 type UserCollection int
@@ -29,6 +58,7 @@ var choices = map[UserCollection]string{
 
 type Analytics interface {
 	Register(name string, agg Aggregation) (AnyWriter, error)
+	Flush() error
 }
 
 type AnyWriter interface {
@@ -51,6 +81,15 @@ func NewNoopAnyWriter() AnyWriter {
 }
 
 func (w *NoopAnyWriter) Write(v interface{}) {}
+
+type StoreAnyWriter struct {
+	store EventWriter
+	key   string
+}
+
+func (w *StoreAnyWriter) Write(v interface{}) {
+	w.store.Write(Event{Key: w.key, Value: v, T: time.Now().UTC()})
+}
 
 type DelegatingStringWriter struct {
 	del AnyWriter
@@ -76,20 +115,26 @@ func (w *DelegatingErrorWriter) Write(v error) {
 	w.del.Write(v)
 }
 
-type MemoryAnalytics struct {
+type StoreAnalytics struct {
 	registered map[string]bool
+	store      EventWriter
 }
 
-func newMemoryAnalytics() *MemoryAnalytics {
-	return &MemoryAnalytics{
+func newStoreAnalytics(store EventWriter) *StoreAnalytics {
+	return &StoreAnalytics{
 		registered: make(map[string]bool),
+		store:      store,
 	}
 }
 
-func (a *MemoryAnalytics) Register(name string, agg Aggregation) (AnyWriter, error) {
+func (a *StoreAnalytics) Register(name string, agg Aggregation) (AnyWriter, error) {
 	if a.registered[name] {
 		return nil, fmt.Errorf("duplicate key %v", name)
 	}
 
-	return &NoopAnyWriter{}, nil
+	return &StoreAnyWriter{store: a.store, key: name}, nil
+}
+
+func (a *StoreAnalytics) Flush() error {
+	return a.store.Flush()
 }
