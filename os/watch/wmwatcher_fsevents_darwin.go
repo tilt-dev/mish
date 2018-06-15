@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsevents"
+	_ "github.com/windmilleng/fsevents"
 	"github.com/windmilleng/fsnotify"
 )
 
