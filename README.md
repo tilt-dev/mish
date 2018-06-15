@@ -35,10 +35,6 @@ echo "sh(\"echo hello world\")" > notes.mill
 
 ### Example notes.mill
 ```python
-### Configs
-watch("**", "!.git/**")
-autorun("./server/*.go", "./common/*/*_test.go")
-
 ### Commands to execute
 sh("make proto")
 sh("go build ./server")
@@ -60,7 +56,7 @@ You can use two mish windows to run a server and simultanously run commands on t
 ![double mish demo gif](https://user-images.githubusercontent.com/4122993/41477185-8d64737c-7091-11e8-9881-acfa668874aa.gif)
 
 
-### Example notes.mill
+### Another example notes.mill
 ```python
 def wf_curlserver():
   sh("curl localhost:8080")
