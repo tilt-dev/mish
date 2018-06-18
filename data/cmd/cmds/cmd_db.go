@@ -15,7 +15,7 @@ import (
 	"github.com/windmilleng/mish/data/db/storage"
 	dataProto "github.com/windmilleng/mish/data/proto"
 	"github.com/windmilleng/mish/data/transform"
-	"github.com/windmilleng/mish/os/ospath"
+	ospathConv "github.com/windmilleng/mish/os/ospath/convert"
 )
 
 // CmdDB is able to find an existing Run we can use.
@@ -136,7 +136,7 @@ func (db *CmdDB) useRunIfPossible(ctx context.Context, c cmd.Cmd, ops []data.Op)
 func (db *CmdDB) Hash(ctx context.Context, c cmd.Cmd) (cmd.Key, error) {
 	var m *dataProto.Matcher
 	if c.SnapshotFS != nil {
-		m = ospath.MatcherD2P(c.SnapshotFS)
+		m = ospathConv.MatcherD2P(c.SnapshotFS)
 	}
 
 	var t cmdProto.Command_CmdType

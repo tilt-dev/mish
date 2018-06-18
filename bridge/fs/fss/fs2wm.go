@@ -19,6 +19,7 @@ import (
 	"github.com/windmilleng/mish/errors"
 	"github.com/windmilleng/mish/logging"
 	"github.com/windmilleng/mish/os/ospath"
+	ospathConv "github.com/windmilleng/mish/os/ospath/convert"
 	"github.com/windmilleng/mish/os/temp"
 	"github.com/windmilleng/mish/os/watch"
 )
@@ -107,7 +108,7 @@ func (m *fs2wm) serialize() *proto.FsBridgeState {
 		result = append(result, &proto.FsToWmState{
 			Pointer: ptr.String(),
 			Path:    []byte(checkin.w.Root()),
-			Matcher: ospath.MatcherD2P(checkin.w.Matcher()),
+			Matcher: ospathConv.MatcherD2P(checkin.w.Matcher()),
 		})
 	}
 	return &proto.FsBridgeState{FsToWmMirrors: result}

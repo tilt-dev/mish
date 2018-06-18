@@ -4,14 +4,14 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/windmilleng/mish/bridge/fs/proto"
 	"github.com/windmilleng/mish/data"
-	"github.com/windmilleng/mish/os/ospath"
+	ospathConv "github.com/windmilleng/mish/os/ospath/convert"
 )
 
 func SnapshotConfigP2D(p *proto.SnapshotConfig) (*SnapshotConfig, error) {
 	if p == nil {
 		return nil, nil
 	}
-	matcher, err := ospath.MatcherP2D(p.Matcher)
+	matcher, err := ospathConv.MatcherP2D(p.Matcher)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func SnapshotConfigD2P(c *SnapshotConfig) *proto.SnapshotConfig {
 		return nil
 	}
 	return &proto.SnapshotConfig{
-		Matcher: ospath.MatcherD2P(c.Matcher()),
+		Matcher: ospathConv.MatcherD2P(c.Matcher()),
 	}
 }
 

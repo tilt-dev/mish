@@ -10,7 +10,7 @@ import (
 	"github.com/windmilleng/mish/bridge/fs/proto"
 	"github.com/windmilleng/mish/data"
 	dbProto "github.com/windmilleng/mish/data/db/proto"
-	"github.com/windmilleng/mish/os/ospath"
+	ospathConv "github.com/windmilleng/mish/os/ospath/convert"
 )
 
 type FSServer struct {
@@ -28,7 +28,7 @@ func (s *FSServer) SnapshotDir(ctx oldctx.Context, req *proto.SnapshotDirRequest
 		return nil, fmt.Errorf("Path is not absolute: %s", req.Path)
 	}
 
-	matcher, err := ospath.MatcherP2D(req.GetMatcher())
+	matcher, err := ospathConv.MatcherP2D(req.GetMatcher())
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (s *FSServer) FS2WMStart(ctx oldctx.Context, req *proto.FS2WMStartRequest) 
 		return nil, fmt.Errorf("Path is not absolute: %s", req.Path)
 	}
 
-	matcher, err := ospath.MatcherP2D(req.Matcher)
+	matcher, err := ospathConv.MatcherP2D(req.Matcher)
 	if err != nil {
 		return nil, err
 	}

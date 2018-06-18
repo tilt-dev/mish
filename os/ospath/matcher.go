@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/windmilleng/mish/data/pathutil"
-	"github.com/windmilleng/mish/data/proto"
 )
 
 type Matcher struct {
@@ -85,14 +84,6 @@ func NewMatcherFromPatterns(patterns []string) (*Matcher, error) {
 
 func (m *Matcher) String() string {
 	return strings.Join(m.ToPatterns(), ",")
-}
-
-func MatcherD2P(m *Matcher) *proto.Matcher {
-	return &proto.Matcher{Patterns: m.ToPatterns()}
-}
-
-func MatcherP2D(p *proto.Matcher) (*Matcher, error) {
-	return NewMatcherFromPatterns(p.Patterns)
 }
 
 func MatchersEqual(a, b *Matcher) bool {

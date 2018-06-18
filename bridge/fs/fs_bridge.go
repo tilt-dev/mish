@@ -9,6 +9,7 @@ import (
 	"github.com/windmilleng/mish/data"
 	"github.com/windmilleng/mish/data/acl"
 	"github.com/windmilleng/mish/os/ospath"
+	ospathConv "github.com/windmilleng/mish/os/ospath/convert"
 )
 
 // A Hint describes how to Snapshot a Directory.
@@ -71,7 +72,7 @@ func InitFromState(ctx context.Context, bridge FSBridge, state *proto.FsBridgeSt
 			return fmt.Errorf("Ignore patterns should not be empty")
 		}
 
-		matcher, err := ospath.MatcherP2D(s.Matcher)
+		matcher, err := ospathConv.MatcherP2D(s.Matcher)
 		if err != nil {
 			return err
 		}

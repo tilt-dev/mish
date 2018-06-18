@@ -11,6 +11,7 @@ import (
 	"github.com/windmilleng/mish/data"
 	dbProto "github.com/windmilleng/mish/data/db/proto"
 	"github.com/windmilleng/mish/os/ospath"
+	ospathConv "github.com/windmilleng/mish/os/ospath/convert"
 )
 
 type GRPCFSBridge struct {
@@ -67,7 +68,7 @@ func (b *GRPCFSBridge) ResetCheckout(ctx context.Context, status fs.CheckoutStat
 func (b *GRPCFSBridge) SnapshotDir(ctx context.Context, path string, matcher *ospath.Matcher, owner data.UserID, tag data.RecipeWTag, hint fs.Hint) (data.SnapshotID, error) {
 	resp, err := b.cl.SnapshotDir(ctx, &proto.SnapshotDirRequest{
 		Path:           path,
-		Matcher:        ospath.MatcherD2P(matcher),
+		Matcher:        ospathConv.MatcherD2P(matcher),
 		BaseSnapshotId: hint.Base.String(),
 		Owner:          uint64(owner),
 		Tag:            dbProto.RecipeWTagD2P(tag),
@@ -83,7 +84,7 @@ func (b *GRPCFSBridge) ToWMStart(ctx context.Context, path string, ptr data.Poin
 	req := &proto.FS2WMStartRequest{
 		Path:      path,
 		PointerId: ptr.String(),
-		Matcher:   ospath.MatcherD2P(matcher),
+		Matcher:   ospathConv.MatcherD2P(matcher),
 	}
 
 	_, err := b.cl.FS2WMStart(ctx, req)
