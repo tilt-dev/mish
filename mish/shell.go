@@ -10,6 +10,7 @@ import (
 
 	"github.com/windmilleng/mish/bridge/fs"
 	"github.com/windmilleng/mish/bridge/fs/fss"
+	"github.com/windmilleng/mish/cli/analytics"
 	"github.com/windmilleng/mish/cli/dirs"
 	"github.com/windmilleng/mish/data"
 	"github.com/windmilleng/mish/data/db/db2"
@@ -32,6 +33,7 @@ type Shell struct {
 	shmill *shmill.Shmill
 	model  *Model
 	view   *View
+	a      analytics.Analytics
 
 	editCh       chan data.PointerAtRev
 	editErrCh    chan error
@@ -82,6 +84,13 @@ func Setup() (*Shell, error) {
 		return nil, err
 	}
 
+	a, err := initAnalytics()
+	if err != nil {
+		return nil, err
+	}
+
+	mishlytics.init.Write(dir)
+
 	panicCh := make(chan error)
 
 	return &Shell{
@@ -98,6 +107,7 @@ func Setup() (*Shell, error) {
 			Spinner:   &Spinner{Chars: []rune{'⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'}},
 		},
 		view: &View{},
+		a:    a,
 
 		editCh:      make(chan data.PointerAtRev),
 		editErrCh:   make(chan error),
@@ -144,6 +154,12 @@ func (sh *Shell) Run() error {
 	go sh.waitForTermEvents()
 	sh.timeCh = time.Tick(time.Second)
 	defer sh.cancelCmd()
+	defer func() {
+		err := sh.a.Flush()
+		if err != nil {
+			logging.Global().Errorf("Error flushing analytics %s", err.Error())
+		}
+	}()
 
 	// run what the mill script currently contains
 	sh.startRun()
@@ -257,12 +273,21 @@ func (sh *Shell) handleShmill(ev shmill.Event) error {
 		run.done = true
 		run.err = ev.Err
 		run.duration = time.Now().Sub(run.start)
+		go sh.recordRunEvent(run)
 	case shmill.ExecDoneEvent:
 		m.Err = ev.Err
 		m.Done = true
 		m.Duration = time.Now().Sub(m.Start)
 	}
 	return nil
+}
+
+func (sh *Shell) recordRunEvent(run *Run) {
+	ev := runEvent{
+		runLatency: run.duration,
+		workflows:  len(sh.model.Flows),
+	}
+	mishlytics.runs.Write(ev)
 }
 
 func (sh *Shell) handleTerminal(event termbox.Event) {
