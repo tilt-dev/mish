@@ -1,14 +1,17 @@
 package analytics
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/windmilleng/mish/cli/dirs"
+	"github.com/windmilleng/mish/logging"
 )
 
 func analyticsStatus(_ *cobra.Command, args []string) error {
@@ -77,7 +80,82 @@ func analyticsOpt(_ *cobra.Command, args []string) (outerErr error) {
 
 const choiceFile = "analytics/user/choice.txt"
 
-func initCLI() (*cobra.Command, error) {
+type analyticsCLI struct {
+	appName  string
+	dir      *dirs.WindmillDir
+	store    EventStore
+	registry map[string]Aggregation
+}
+
+func (c *analyticsCLI) gen(_ *cobra.Command, args []string) error {
+	// TODO(dbentley): only process certain events, e.g., the last day
+	es, err := c.store.Get(time.Unix(0, 0))
+	if err != nil {
+		return err
+	}
+
+	eventByKey := map[string][]Event{}
+
+	for _, e := range es {
+		eventByKey[e.Key] = append(eventByKey[e.Key], e)
+	}
+
+	agg := map[string]interface{}{}
+	anon := map[string]interface{}{}
+
+	for k, v := range eventByKey {
+		f, ok := c.registry[k]
+		if !ok {
+			f = SaveLocallyReportUnregistered
+		}
+		if f == nil {
+			continue
+		}
+
+		var err error
+		agg[k], anon[k], err = f(v)
+		if err != nil {
+			logging.Global().Infof("error aggregating key %v: %v", k, err)
+		}
+	}
+
+	logging.Global().Infof("aggregated: %v", agg)
+	logging.Global().Infof("anonymized: %v", anon)
+
+	date := time.Now().UTC().Format("20060102150405")
+	logging.Global().Infof("date string %v", date)
+
+	bs, err := json.Marshal(agg)
+	if err != nil {
+		return err
+	}
+
+	p := filepath.Join("analytics", c.appName, "gen", fmt.Sprintf("agg-%s.json", date))
+	if err := c.dir.WriteFile(p, string(bs)); err != nil {
+		return err
+	}
+
+	bs, err = json.Marshal(anon)
+	if err != nil {
+		return err
+	}
+
+	p = filepath.Join("analytics", c.appName, "gen", fmt.Sprintf("anon-%s.json", date))
+	if err := c.dir.WriteFile(p, string(bs)); err != nil {
+		return err
+	}
+
+	// TODO(dbentley): trim events we won't need to aggregate in the future
+	return nil
+}
+
+func initCLI(s EventStore, appName string, dir *dirs.WindmillDir, registry map[string]Aggregation) (*cobra.Command, error) {
+	cli := &analyticsCLI{
+		store:    s,
+		registry: registry,
+		dir:      dir,
+		appName:  appName,
+	}
 	analytics := &cobra.Command{
 		Use:   "analytics",
 		Short: "info and status about windmill analytics",
@@ -91,5 +169,12 @@ func initCLI() (*cobra.Command, error) {
 	}
 
 	analytics.AddCommand(opt)
+
+	gen := &cobra.Command{
+		Use:   "gen",
+		Short: "generate windmill analytics",
+		RunE:  cli.gen,
+	}
+	analytics.AddCommand(gen)
 	return analytics, nil
 }

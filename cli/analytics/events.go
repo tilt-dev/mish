@@ -19,6 +19,7 @@ type EventWriter interface {
 
 type EventStore interface {
 	EventWriter
+	// TODO(dbentley): should we guarantee that Events are sorted by time? Probably
 	Get(since time.Time) ([]Event, error)
 	Trim(upTo time.Time) error
 }

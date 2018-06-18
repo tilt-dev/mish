@@ -11,7 +11,6 @@ import (
 )
 
 func Init(appName string) (Analytics, *cobra.Command, error) {
-	c, err := initCLI()
 
 	d, err := dirs.UseWindmillDir()
 	if err != nil {
@@ -36,8 +35,14 @@ func Init(appName string) (Analytics, *cobra.Command, error) {
 		return nil, nil, err
 	}
 	s := newMemoryEventStore()
-	comp := newCompositeEventWriter(s, m)
-	return newStoreAnalytics(comp), c, err
+	comp := newCompositeEventStore(s, m)
+	a := newStoreAnalytics(comp)
+	c, err := initCLI(comp, appName, d, a.registry)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return a, c, nil
 }
 
 type UserCollection int
@@ -116,21 +121,23 @@ func (w *DelegatingErrorWriter) Write(v error) {
 }
 
 type StoreAnalytics struct {
-	registered map[string]bool
-	store      EventWriter
+	registry map[string]Aggregation
+	store    EventWriter
 }
 
 func newStoreAnalytics(store EventWriter) *StoreAnalytics {
 	return &StoreAnalytics{
-		registered: make(map[string]bool),
-		store:      store,
+		registry: make(map[string]Aggregation),
+		store:    store,
 	}
 }
 
 func (a *StoreAnalytics) Register(name string, agg Aggregation) (AnyWriter, error) {
-	if a.registered[name] {
+	if a.registry[name] != nil {
 		return nil, fmt.Errorf("duplicate key %v", name)
 	}
+
+	a.registry[name] = agg
 
 	return &StoreAnyWriter{store: a.store, key: name}, nil
 }
