@@ -27,7 +27,7 @@ func TestEventOrdering(t *testing.T) {
 	f := newWMNotifyFixture(t)
 	defer f.tearDown()
 
-	count := 10
+	count := 100
 	dirs := make([]string, count)
 	for i, _ := range dirs {
 		dir, err := f.root.NewDir("watched")
