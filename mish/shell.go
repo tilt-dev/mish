@@ -89,7 +89,7 @@ func Setup() (*Shell, error) {
 		return nil, err
 	}
 
-	mishlytics.init.Write(dir)
+	// TODO: mishlytics.init.Write(dir)
 
 	panicCh := make(chan error)
 
@@ -278,11 +278,11 @@ func (sh *Shell) handleShmill(ev shmill.Event) error {
 }
 
 func (sh *Shell) recordRunEvent(run *Run) {
-	ev := runEvent{
-		runLatency: run.duration,
-		workflows:  len(sh.model.Flows),
-	}
-	mishlytics.runs.Write(ev)
+	//ev := runEvent{
+	//	runLatency: run.duration,
+	//	workflows:  len(sh.model.Flows),
+	//}
+	// TODO: mishlytics.runs.Write(ev)
 }
 
 func (sh *Shell) handleTerminal(event termbox.Event) {

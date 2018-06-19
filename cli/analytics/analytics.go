@@ -1,43 +1,24 @@
 package analytics
 
 import (
+	"os"
+	"strings"
+
 	"fmt"
-	"path/filepath"
-	"time"
 
 	"github.com/spf13/cobra"
-
 	"github.com/windmilleng/mish/cli/dirs"
 )
 
-func Init(appName string) (Analytics, *cobra.Command, error) {
+const optInByDefault = false
 
-	d, err := dirs.UseWindmillDir()
-	if err != nil {
-		return nil, nil, err
-	}
-	appDir := filepath.Join("analytics", appName)
-	if err := d.MkdirAll(appDir); err != nil {
-		return nil, nil, err
-	}
+func Init() (Analytics, *cobra.Command, error) {
+	// TODO(maia): use this info in Analytics struct
+	//optedIn := optedIn()
+	//fmt.Fprintf(os.Stderr, "ANALYTICS OPTED-IN: %t\n", optedIn)
 
-	dbName, err := d.Abs(filepath.Join(appDir, "db"))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	b, err := newBoltByteEventStore(dbName)
-	if err != nil {
-		return nil, nil, err
-	}
-	m, err := NewMarshalingEventStore(b)
-	if err != nil {
-		return nil, nil, err
-	}
-	s := newMemoryEventStore()
-	comp := newCompositeEventStore(s, m)
-	a := newStoreAnalytics(comp)
-	c, err := initCLI(comp, appName, d, a.registry)
+	a := NewMemoryAnalytics()
+	c, err := initCLI()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -45,103 +26,72 @@ func Init(appName string) (Analytics, *cobra.Command, error) {
 	return a, c, nil
 }
 
-type UserCollection int
+type AnalyticsOpt int
 
 const (
-	CollectDefault UserCollection = iota
-	CollectNotEvenLocal
-	CollectLocal
-	CollectUpload
+	AnalyticsOptDefault AnalyticsOpt = iota
+	AnalyticsOptOut
+	AnalyticsOptIn
 )
 
-var choices = map[UserCollection]string{
-	CollectDefault:      "default",
-	CollectNotEvenLocal: "not-even-local",
-	CollectLocal:        "local",
-	CollectUpload:       "upload",
+var choices = map[AnalyticsOpt]string{
+	AnalyticsOptDefault: "default",
+	AnalyticsOptOut:     "opt-out",
+	AnalyticsOptIn:      "opt-in",
+}
+
+func readChoiceFile() (string, error) {
+	d, err := dirs.UseWindmillDir()
+	if err != nil {
+		return "", err
+	}
+
+	txt, err := d.ReadFile(choiceFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		txt = ""
+	}
+
+	return strings.TrimSpace(txt), nil
+}
+
+func optedIn() bool {
+	txt, err := readChoiceFile()
+	if txt != "" {
+		switch txt {
+		case choices[AnalyticsOptOut]:
+			return false
+		case choices[AnalyticsOptIn]:
+			return true
+		}
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "analytics.optedIn: %v\n", err)
+	}
+	return optInByDefault
+
 }
 
 type Analytics interface {
-	Register(name string, agg Aggregation) (AnyWriter, error)
-	Flush() error
+	//IncrementWithTags(name string, tags map[string]string, n int) error
+	// For now, just increment w/o tags
+	// TODO(maia): default increment of 1
+	Increment(name string, n int) error
 }
 
-type AnyWriter interface {
-	Write(v interface{})
+// Awkwardly just store stuff in memory for now
+type MemoryAnalytics struct {
+	Stats map[string]int
 }
 
-type StringWriter interface {
-	Write(v string)
+func (a *MemoryAnalytics) Increment(name string, n int) error {
+	a.Stats[name] = a.Stats[name] + n
+	return nil
 }
 
-type ErrorWriter interface {
-	Write(v error)
-}
-
-type NoopAnyWriter struct {
-}
-
-func NewNoopAnyWriter() AnyWriter {
-	return &NoopAnyWriter{}
-}
-
-func (w *NoopAnyWriter) Write(v interface{}) {}
-
-type StoreAnyWriter struct {
-	store EventWriter
-	key   string
-}
-
-func (w *StoreAnyWriter) Write(v interface{}) {
-	w.store.Write(Event{Key: w.key, Value: v, T: time.Now().UTC()})
-}
-
-type DelegatingStringWriter struct {
-	del AnyWriter
-}
-
-func NewStringWriter(w AnyWriter) StringWriter {
-	return &DelegatingStringWriter{del: w}
-}
-
-func (w *DelegatingStringWriter) Write(v string) {
-	w.del.Write(v)
-}
-
-type DelegatingErrorWriter struct {
-	del AnyWriter
-}
-
-func NewErrorWriter(w AnyWriter) ErrorWriter {
-	return &DelegatingErrorWriter{del: w}
-}
-
-func (w *DelegatingErrorWriter) Write(v error) {
-	w.del.Write(v)
-}
-
-type StoreAnalytics struct {
-	registry map[string]Aggregation
-	store    EventWriter
-}
-
-func newStoreAnalytics(store EventWriter) *StoreAnalytics {
-	return &StoreAnalytics{
-		registry: make(map[string]Aggregation),
-		store:    store,
-	}
-}
-
-func (a *StoreAnalytics) Register(name string, agg Aggregation) (AnyWriter, error) {
-	if a.registry[name] != nil {
-		return nil, fmt.Errorf("duplicate key %v", name)
-	}
-
-	a.registry[name] = agg
-
-	return &StoreAnyWriter{store: a.store, key: name}, nil
-}
-
-func (a *StoreAnalytics) Flush() error {
-	return a.store.Flush()
+func NewMemoryAnalytics() *MemoryAnalytics {
+	return &MemoryAnalytics{make(map[string]int)}
 }
