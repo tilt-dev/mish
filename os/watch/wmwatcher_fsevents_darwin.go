@@ -76,13 +76,6 @@ func (d *darwinNotify) loop() {
 					Name: y.Path,
 					Op:   op,
 				}
-
-				if op == fsnotify.Create {
-					d.events <- fsnotify.Event{
-						Name: y.Path,
-						Op:   fsnotify.Write,
-					}
-				}
 			}
 		}
 	}

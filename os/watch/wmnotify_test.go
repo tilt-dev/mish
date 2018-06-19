@@ -27,7 +27,7 @@ func TestEventOrdering(t *testing.T) {
 	f := newWMNotifyFixture(t)
 	defer f.tearDown()
 
-	count := 100
+	count := 8
 	dirs := make([]string, count)
 	for i, _ := range dirs {
 		dir, err := f.root.NewDir("watched")
@@ -85,6 +85,7 @@ type wmNotifyFixture struct {
 }
 
 func newWMNotifyFixture(t *testing.T) *wmNotifyFixture {
+	SetLimitChecksEnabled(false)
 	notify, err := NewWatcher()
 	if err != nil {
 		t.Fatal(err)
@@ -119,7 +120,8 @@ func (f *wmNotifyFixture) assertNoEvents() {
 }
 
 func (f *wmNotifyFixture) fsync() {
-	syncPath := filepath.Join(f.watched.Path(), "sync.txt")
+	syncPathBase := fmt.Sprintf("sync-%d.txt", time.Now().UnixNano())
+	syncPath := filepath.Join(f.watched.Path(), syncPathBase)
 	eventsDoneCh := make(chan error)
 	timeout := time.After(time.Second)
 	go func() {
@@ -135,8 +137,9 @@ func (f *wmNotifyFixture) fsync() {
 				return
 
 			case event := <-f.notify.Events():
-				if strings.Contains(event.Name, "sync.txt") {
-					if event.Op == fsnotify.Write {
+				if strings.Contains(event.Name, syncPathBase) {
+					// We only care about create events.
+					if event.Op&fsnotify.Create == fsnotify.Create {
 						return
 					}
 					continue
@@ -161,6 +164,7 @@ func (f *wmNotifyFixture) fsync() {
 }
 
 func (f *wmNotifyFixture) tearDown() {
+	SetLimitChecksEnabled(true)
 	err := f.root.TearDown()
 	if err != nil {
 		f.t.Fatal(err)
