@@ -20,8 +20,8 @@ type Model struct {
 	Shmill *Shmill
 
 	// byproducts of shmill
-	BlockSizes   []int // block i has BlockSizes[i] many lines
-	ShmillHeight int
+	BlockSizes []int // block i has BlockSizes[i] many lines
+	ViewHeight int
 
 	// modified by keys
 	Cursor    Cursor
@@ -50,8 +50,9 @@ func (s *Spinner) Cur() rune {
 }
 
 type Cursor struct {
-	Block int
-	Line  int // line index within this block (not over the whole doc)
+	Block      int
+	Line       int // line index within this block (not over the whole doc)
+	LineInView int
 }
 
 type Shmill struct {

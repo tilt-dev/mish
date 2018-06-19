@@ -190,7 +190,7 @@ func (sh *Shell) Run() error {
 		case err := <-sh.panicCh:
 			return err
 		}
-		sh.model.BlockSizes, sh.model.ShmillHeight = sh.view.Render(sh.model)
+		sh.model.BlockSizes, sh.model.ViewHeight = sh.view.Render(sh.model)
 	}
 }
 
@@ -233,6 +233,7 @@ func (sh *Shell) handleEdit(head data.PointerAtRev) error {
 
 func (sh *Shell) startRun() {
 	sh.model.Shmill = NewShmill()
+	sh.model.Cursor = Cursor{}
 	sh.model.QueuedFiles = nil
 	if sh.shmillCh != nil {
 		sh.cancelCmd()
@@ -333,39 +334,36 @@ func (sh *Shell) runSelectedFlow() {
 }
 
 func (sh *Shell) handleTerminalForShmill(event termbox.Event) {
+	m := sh.model
 	switch event.Key {
 	case termbox.KeyArrowUp:
-		sh.model.Cursor.Line--
-		sh.snapCursorToBlock()
+		m.Cursor = scroll(m.Cursor, m.BlockSizes, m.ViewHeight, upAction)
 	case termbox.KeyArrowDown:
-		sh.model.Cursor.Line++
-		sh.snapCursorToBlock()
+		m.Cursor = scroll(m.Cursor, m.BlockSizes, m.ViewHeight, downAction)
 	case termbox.KeyPgdn:
-		sh.model.Cursor.Line += sh.model.ShmillHeight
-		sh.snapCursorToBlock()
+		m.Cursor = scroll(m.Cursor, m.BlockSizes, m.ViewHeight, pgDnAction)
 	case termbox.KeyPgup:
-		sh.model.Cursor.Line -= sh.model.ShmillHeight
-		sh.snapCursorToBlock()
+		m.Cursor = scroll(m.Cursor, m.BlockSizes, m.ViewHeight, pgUpAction)
 	}
 
 	switch event.Ch {
 	case 'r':
 		sh.startRun()
 	case 'j':
-		sh.model.Cursor.Block++
-		sh.model.Cursor.Line = 0
-		sh.snapCursorToBlock()
+		// sh.model.Cursor.Block++
+		// sh.model.Cursor.Line = 0
+		// sh.snapCursorToBlock()
 	case 'k':
-		sh.model.Cursor.Block--
-		sh.model.Cursor.Line = 0
-		sh.snapCursorToBlock()
+		// sh.model.Cursor.Block--
+		// sh.model.Cursor.Line = 0
+		// sh.snapCursorToBlock()
 	case 'o':
-		if sh.model.Collapsed[sh.model.Cursor.Block] {
-			delete(sh.model.Collapsed, sh.model.Cursor.Block)
-		} else {
-			sh.model.Collapsed[sh.model.Cursor.Block] = true
-			sh.model.Cursor.Line = 0
-		}
+		// if sh.model.Collapsed[sh.model.Cursor.Block] {
+		// 	delete(sh.model.Collapsed, sh.model.Cursor.Block)
+		// } else {
+		// 	sh.model.Collapsed[sh.model.Cursor.Block] = true
+		// 	sh.model.Cursor.Line = 0
+		// }
 	}
 }
 

@@ -98,17 +98,24 @@ func (r *Render) renderFooter(m *Model) {
 	p.at(c.maxX-len(logo), 0)
 	p.text(logo)
 
-	// Hotkeys
-	keys := fmt.Sprintf("BROWSE: [j] next, [k] prev, [o] show/hide  %s  SCROLL: [↑] Up, [↓] Down, [PageUp], [PageDown]  %s  (r)erun  %s  choose (f)low  %s  (q)uit", divDot, divDot, divDot, divDot)
-	if m.ShowFlowChooser {
-		keys = fmt.Sprintf("BROWSE: [↑] Up, [↓] Down  %s  (r)un", divDot)
-	}
 	p.at(1, 1)
 	p.setColor(termbox.ColorDefault, termbox.ColorDefault)
-	p.text(keys)
+
+	// Hotkeys
+	if scrollDevMode {
+		p.text(fmt.Sprintf("cursor: %v, viewHeight: %v, blocks: %v (len: %v)", m.Cursor, m.ViewHeight, m.BlockSizes, len(m.BlockSizes)))
+	} else {
+		keys := fmt.Sprintf("BROWSE: [j] next, [k] prev, [o] show/hide  %s  SCROLL: [↑] Up, [↓] Down, [PageUp], [PageDown]  %s  (r)erun  %s  choose (f)low  %s  (q)uit", divDot, divDot, divDot, divDot)
+		if m.ShowFlowChooser {
+			keys = fmt.Sprintf("BROWSE: [↑] Up, [↓] Down  %s  (r)un", divDot)
+		}
+		p.text(keys)
+	}
 
 	c.RenderAt(0, r.maxY-footerHeight)
 }
+
+const scrollDevMode = false
 
 func (r *Render) maybeRenderFlowChooser(m *Model) {
 	if !m.ShowFlowChooser {
@@ -192,14 +199,14 @@ func (r *Render) renderShmill(m *Model) []int {
 		blocks = append(blocks, numLines)
 	}
 
-	scrollY := 0
+	bufferIdx := 0
 	for i, l := range blocks {
 		if i < m.Cursor.Block {
-			scrollY += l
+			bufferIdx += l
 		}
 	}
-	scrollY += m.Cursor.Line
-	c.RenderAt(0, r.maxY-footerHeight, scrollY)
+	bufferIdx += m.Cursor.Line
+	c.RenderAt(0, r.maxY-footerHeight, bufferIdx, m.Cursor.LineInView)
 
 	return blocks
 }

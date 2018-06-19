@@ -60,37 +60,35 @@ func (c *scrollCanvas) SetCell(x, y int, ch rune, fg, bg termbox.Attribute) {
 }
 
 // RenderAt renders onto the screen starting at line screenY,
-// taking up numLines lines, beginning at line startLine in the canvas's buffer
-func (c *scrollCanvas) RenderAt(screenY, numLines, startLine int) {
-	if len(c.lines) == 0 {
-		return
-	}
+// taking up numLines lines.
+// The caller indicates which line of the buffer should have the cursor with bufferIdx.
+// This line will appear in the target at height cursorHeight.
+// This odd-looking interface makes writing scroll code easier because the cursor knows
+// which line should be highlighted and what height it should be at.
+func (c *scrollCanvas) RenderAt(screenY, numLines, bufferIdx int, cursorHeight int) {
+	startLine := bufferIdx - cursorHeight
 
-	if startLine < len(c.lines) {
-		// if we can highlight the line we were highlighting, highlight that
-		highlightCells(c.lines[startLine], termbox.ColorWhite, termbox.ColorBlue)
-	} else {
-		// otherwise highlight the last available line
-		highlightCells(c.lines[len(c.lines)-1], termbox.ColorWhite, termbox.ColorBlue)
-	}
+	lines := c.getLines(startLine, numLines)
 
-	// Don't keep scrolling if there is no content
-	if len(c.lines)-startLine < numLines || len(c.lines)-startLine < 0 {
-		startLine = len(c.lines) - numLines
-	}
-
-	if startLine < 0 {
-		startLine = 0
-	}
-
-	for i, line := range c.lines[startLine:] {
-		if i >= numLines {
-			return
-		}
+	for i, line := range lines {
 		for j, cell := range line {
 			termbox.SetCell(j, screenY+i, cell.Ch, cell.Fg, cell.Bg)
 		}
 	}
+
+	termbox.SetCursor(0, screenY+cursorHeight)
+}
+
+func (c *scrollCanvas) getLines(startLine int, numLines int) [][]termbox.Cell {
+	if len(c.lines) == 0 {
+		return nil
+	}
+
+	lines := c.lines[startLine:]
+	if len(lines) > numLines {
+		lines = lines[:numLines]
+	}
+	return lines
 }
 
 func newBoxCanvas(maxX, maxY int) *boxCanvas {
