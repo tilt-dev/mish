@@ -21,30 +21,20 @@ echo "sh(\"echo hello world\")" > notes.mill
 
 ### Hotkeys
 * `↓`/`↑`: scroll down/up
+* `PgDn`/`PgUp`: page down/up
 * `j`/`k`: jump down/up one command
 * `o`: expand/collapse current command output
-* `r`: run your notes.mill file
+* `r`: run your `notes.mill`
+* `f`: select a workflow to run from your `notes.mill`
 * `q`: quit
 
 ### Available Mill Functions
 * `sh`: execute arbitrary shell commands
   * `sh("my shell command")`
   * Normally, when a your shell commands exits with a non-zero status code, `mish` will abort the whole execution. To continue execution if a given command fails, specify `sh("faily command", tolerate_failure=True)`
-* Filesystem interaction:
-  * `watch`: specify files to watch. Edits to these files will be displayed in the `mish` status bar.
-  * `autorun`: specify files that will trigger rerunning of your notes.mill. (Autorun works based on what's been `watch`'ed; you must `watch` a file before `autorun`'ing it.)
-  * _patterns_: `watch` and `autorun` each specify files by taking any number of _patterns_. A _pattern_ is a string that matches files.
-    * The wildcard `*` expands to any text in a directory. `"foo/*.go"` matches all go files in the directory `foo`
-    * The wildcard `**` expands to match any number of directories. `"**/*.go"` matches all go files in this directory or subdirectories.
-    * _patterns_ match files, not directories. If `foo` is a directory, `"foo"` will not match any files. (Use `"foo/**"`)
-    * If a _pattern_ starts with "!", its an inversion. `watch('**', '!.git/**')` will watch all files, except your `.git` directory.
 
 ### Example notes.mill
 ```python
-### Configs
-watch("**", "!.git/**")
-autorun("./server/*.go", "./common/*/*_test.go")
-
 ### Commands to execute
 sh("make proto")
 sh("go build ./server")
@@ -52,12 +42,39 @@ sh("go test server", tolerate_failure=True) # if this exits w/ non-zero code, ke
 sh("go test common")
 ```
 
+## Fun with Mish
+There are a few other unique things you can do with mish.
+
+### Use functions to run different shell commands
+Mish functions are called workflows and are prefixed by `wf_`. Once you've defined workflows in your `notes.mill`, you can bring up the list of your workflows by pressing `f` within mish, cycle through with your arrow keys, and press `r` to run. If your command is defined outside of a function, it will run automatically.
+
+![mish flows demo gif](https://user-images.githubusercontent.com/4122993/41476760-7c4f0a6c-7090-11e8-94c4-32607137ef34.gif)
+
+### Run two mishes at once
+You can use mish to run a server in one mish window and simultanously run commands on that server in another mish window. Also, by implementing workflows in your `notes.mill`, you can edit the server and commands you're running and rerun them easily in each window. 
+
+![double mish demo gif](https://user-images.githubusercontent.com/4122993/41477185-8d64737c-7091-11e8-9881-acfa668874aa.gif)
+
+
+The `notes.mill` from the above gif is included in part here as an example of workflows:
+
+```python
+def wf_curlserver():
+  sh("curl localhost:8080")
+
+def wf_jsserver():
+  sh("node ./server.js")
+
+def wf_goserver():
+  sh("go run ./main.go")
+```
+
 ## Tell Us What You Think!
 Tried `mish`? Loved it? Hated it? Couldn't get past the install? [**Take our survey**](https://docs.google.com/forms/d/e/1FAIpQLSf8UXLG0FOeMswoW7LuUP02CeUwKBccJishJKDE_VyOqe7g_g/viewform?usp=sf_link) and tell us about your experience. Your feedback will help us make dev tools better for everyone!
 
 ### Guiding Questions for Alpha Users
 If you're one of our amazing alpha users, thank you! We appreciate you taking the time to test our product and give us feedback. Here are some things that we'd love for you to keep in mind as you test out `mish` so we can pick your brain about them later:
-1. When do you find yourself editing notes.mill? If it occurs to you to edit notes.mill and you don’t, why?
+1. When do you find yourself editing `notes.mill`? If it occurs to you to edit `notes.mill` and you don’t, why?
 2. When are you still using your shell instead of mish? Why?
 3. Did you get annoyed/distracted by `mish`, or turn it off?
 4. How does writing in Mill (our configuration language) feel? Intuitive? Annoying?
