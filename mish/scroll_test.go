@@ -71,6 +71,39 @@ func TestPageDown(t *testing.T) {
 	f.pgDn(3, 1, 0)
 }
 
+func TestPageUp(t *testing.T) {
+	f := setup(t)
+	f.viewHeight = 9
+	f.blocks(3, 11, 6, 3)
+
+	// blocks
+	f.pgUp(0, 0, 0)
+	f.pgDn(1, 4, 0)
+	f.pgDn(1, 11, 0)
+	f.pgUp(1, 4, 0)
+}
+
+func TestJumpBlockDn(t *testing.T) {
+	f := setup(t)
+	f.viewHeight = 9
+	f.blocks(3, 9, 3)
+
+	f.jumpBlockDn(1, 0, 1)
+	f.jumpBlockDn(2, 0, 1)
+	f.jumpBlockDn(2, 0, 1)
+}
+
+func TestJumpBlockUp(t *testing.T) {
+	f := setup(t)
+	f.viewHeight = 9
+	f.blocks(3, 9, 3)
+
+	f.jumpBlockUp(0, 0, 0)
+	f.jumpBlockDn(1, 0, 1)
+	f.jumpBlockDn(2, 0, 1)
+	f.jumpBlockUp(1, 0, 1)
+}
+
 type fixture struct {
 	t *testing.T
 
@@ -96,15 +129,29 @@ func (f *fixture) down(exBlock int, exLine int, exLineInView int) {
 	expected := Cursor{exBlock, exLine, exLineInView}
 	f.scroll(expected, downAction)
 }
+func (f *fixture) up(exBlock int, exLine int, exLineInView int) {
+	expected := Cursor{exBlock, exLine, exLineInView}
+	f.scroll(expected, upAction)
+}
 
 func (f *fixture) pgDn(exBlock int, exLine int, exLineInView int) {
 	expected := Cursor{exBlock, exLine, exLineInView}
 	f.scroll(expected, pgDnAction)
 }
 
-func (f *fixture) up(exBlock int, exLine int, exLineInView int) {
+func (f *fixture) pgUp(exBlock int, exLine int, exLineInView int) {
 	expected := Cursor{exBlock, exLine, exLineInView}
-	f.scroll(expected, upAction)
+	f.scroll(expected, pgUpAction)
+}
+
+func (f *fixture) jumpBlockDn(exBlock int, exLine int, exLineInView int) {
+	expected := Cursor{exBlock, exLine, exLineInView}
+	f.scroll(expected, jumpBlockDnAction)
+}
+
+func (f *fixture) jumpBlockUp(exBlock int, exLine int, exLineInView int) {
+	expected := Cursor{exBlock, exLine, exLineInView}
+	f.scroll(expected, jumpBlockUpAction)
 }
 
 func (f *fixture) scroll(expected Cursor, a action) {

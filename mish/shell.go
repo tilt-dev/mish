@@ -344,20 +344,16 @@ func (sh *Shell) handleTerminalForShmill(event termbox.Event) {
 	case 'r':
 		sh.startRun()
 	case 'j':
-		// sh.model.Cursor.Block++
-		// sh.model.Cursor.Line = 0
-		// sh.snapCursorToBlock()
+		m.Cursor = scroll(m.Cursor, m.BlockSizes, m.ViewHeight, jumpBlockDnAction)
 	case 'k':
-		// sh.model.Cursor.Block--
-		// sh.model.Cursor.Line = 0
-		// sh.snapCursorToBlock()
+		m.Cursor = scroll(m.Cursor, m.BlockSizes, m.ViewHeight, jumpBlockUpAction)
 	case 'o':
-		// if sh.model.Collapsed[sh.model.Cursor.Block] {
-		// 	delete(sh.model.Collapsed, sh.model.Cursor.Block)
-		// } else {
-		// 	sh.model.Collapsed[sh.model.Cursor.Block] = true
-		// 	sh.model.Cursor.Line = 0
-		// }
+		if sh.model.Collapsed[sh.model.Cursor.Block] {
+			delete(sh.model.Collapsed, sh.model.Cursor.Block)
+		} else {
+			sh.model.Collapsed[sh.model.Cursor.Block] = true
+			sh.model.Cursor.Line = 0
+		}
 	}
 }
 
