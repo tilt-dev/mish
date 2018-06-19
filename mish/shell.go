@@ -154,12 +154,6 @@ func (sh *Shell) Run() error {
 	go sh.waitForTermEvents()
 	sh.timeCh = time.Tick(time.Second)
 	defer sh.cancelCmd()
-	defer func() {
-		err := sh.a.Flush()
-		if err != nil {
-			logging.Global().Errorf("Error flushing analytics %s", err.Error())
-		}
-	}()
 
 	// run what the mill script currently contains
 	sh.startRun()
