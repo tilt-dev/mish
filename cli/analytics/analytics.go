@@ -92,7 +92,6 @@ type IncEvent struct {
 }
 
 func (a *MemoryAnalytics) Count(name string, tags map[string]string, n int) {
-	fmt.Printf("%s += %d\n", name, n)
 	a.Incs = append(a.Incs, IncEvent{name: name, tags: tags, n: n})
 }
 
