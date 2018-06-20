@@ -359,6 +359,10 @@ func (sh *Shell) handleTerminalForShmill(event termbox.Event) {
 		} else {
 			sh.model.Collapsed[sh.model.Cursor.Block] = true
 			sh.model.Cursor.Line = 0
+			bufferIdx := getBufferIdx(m.Cursor, m.BlockSizes)
+			if bufferIdx < m.Cursor.LineInView {
+				m.Cursor.LineInView = bufferIdx
+			}
 		}
 	}
 }
@@ -382,69 +386,6 @@ func (sh *Shell) runFlow() {
 	}
 
 	sh.model.SelectedFlow = sh.model.Flows[sh.model.FlowChooserPos-1]
-}
-
-// snapCursorToBlock makes the cursor point to a sensible position.
-// E.g., if the Cursor is (4, -1), it will fix it to point to (3, <last line of block 3>)
-func (sh *Shell) snapCursorToBlock() {
-	c := sh.model.Cursor
-	blocks := sh.model.BlockSizes
-
-	sh.model.Cursor = snapCursorToBlock(c, blocks)
-}
-
-func snapCursorToBlock(c Cursor, blocks []int) Cursor {
-	if c.Block >= len(blocks) {
-		// fallen off edge of last block, go to end
-		lastBlock := len(blocks) - 1
-		c.Block = lastBlock
-		c.Line = blocks[c.Block] // subtracting 1 doesn't work here?
-		return c
-	}
-	if c.Block < 0 {
-		c.Block = 0
-		c.Line = 0
-		return c
-	}
-	// increment to a successive block based on the size of the current block
-	if c.Line > blocks[c.Block] {
-		c.Line = c.Line - blocks[c.Block]
-		c.Block++
-		return snapCursorToBlock(c, blocks)
-	}
-	// decrement to a previous block based on size of previous block
-	if c.Line < 0 {
-		if c.Block < 1 {
-			c.Block = 0
-			c.Line = 0
-			return c
-		}
-		c.Line = c.Line + blocks[c.Block-1]
-		c.Block--
-		return snapCursorToBlock(c, blocks)
-	}
-	return c
-}
-
-func (sh *Shell) lastBlockLine(i int) int {
-	if i < 0 {
-		return 0
-	}
-	if i >= len(sh.model.BlockSizes) {
-		return 0
-	}
-	l := sh.model.BlockSizes[i] - 1
-	if l < 0 {
-		return 0
-	}
-	return l
-}
-
-func (sh *Shell) prevBlock(i int) int {
-	if i >= len(sh.model.BlockSizes) {
-		return len(sh.model.BlockSizes) - 1
-	}
-	return i - 1
 }
 
 // Below here is code that happens on goroutines other than Run()
