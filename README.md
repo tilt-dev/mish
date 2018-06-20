@@ -4,7 +4,7 @@ Bonjour! Je m'appelle Michel—pronounced mee-shell (/mi.ʃɛl/). Coincidentally
 
 I'm an early experiment, not a finished product, but I bet I can still make your workflow a little bit better. Read more [on the Windmill Blog](https://medium.com/windmill-engineering/mish-cruise-control-for-developers-98629709b5ec).
 
-![mish demo gifcast](./gifcast.gif "mish demo gifcast")
+![mish demo gif](https://user-images.githubusercontent.com/4122993/41674916-3176ebc4-748f-11e8-8bf7-1ab7da6c25d7.gif)
 
 ## Getting the binary
 If you're running macOS or Linux, you can download a pre-compiled binary from [**our releases page**](https://github.com/windmilleng/mish/releases). Otherwise, you can install via the Go toolchain. First [install Go](https://golang.org/doc/install#install) and make sure that you've added `/usr/local/go/bin` to the `PATH` environment variable. Then install `mish` with:
