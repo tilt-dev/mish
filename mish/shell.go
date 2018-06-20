@@ -8,28 +8,18 @@ import (
 
 	"github.com/nsf/termbox-go"
 
-	"github.com/windmilleng/mish/bridge/fs"
-	"github.com/windmilleng/mish/bridge/fs/fss"
 	"github.com/windmilleng/mish/cli/analytics"
 	"github.com/windmilleng/mish/cli/dirs"
 	"github.com/windmilleng/mish/data"
-	"github.com/windmilleng/mish/data/db/db2"
-	"github.com/windmilleng/mish/data/db/dbint"
-	"github.com/windmilleng/mish/data/db/dbpath"
-	"github.com/windmilleng/mish/data/db/storage/storages"
 	"github.com/windmilleng/mish/data/pathutil"
 	"github.com/windmilleng/mish/logging"
 	"github.com/windmilleng/mish/mish/shmill"
-	"github.com/windmilleng/mish/os/ospath"
-	"github.com/windmilleng/mish/os/temp"
 )
 
 // the shell is the controller of our MVC
 type Shell struct {
 	ctx    context.Context
 	dir    string // TODO(dbentley): support a different Millfile
-	db     dbint.DB2
-	fs     fs.FSBridge
 	shmill *shmill.Shmill
 	model  *Model
 	view   *View
@@ -62,24 +52,6 @@ func Setup() (*Shell, error) {
 	if err != nil {
 		return nil, err
 	}
-	recipes := storages.NewTestMemoryRecipeStore()
-	ptrs := storages.NewMemoryPointers()
-	db := db2.NewDB2(recipes, ptrs)
-	tmp, err := temp.NewDir("mish")
-	if err != nil {
-		return nil, err
-	}
-	opt := db2.NewOptimizer(db, recipes)
-	fs := fss.NewLocalFSBridge(ctx, db, opt, tmp)
-
-	_, err = db.AcquirePointer(ctx, ptrID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := setupMirror(ctx, fs, dir, ptrID); err != nil {
-		return nil, err
-	}
 
 	if err := termbox.Init(); err != nil {
 		return nil, err
@@ -97,9 +69,7 @@ func Setup() (*Shell, error) {
 	return &Shell{
 		ctx:    ctx,
 		dir:    dir,
-		db:     db,
-		fs:     fs,
-		shmill: shmill.NewShmill(fs, ptrID, dir, panicCh),
+		shmill: shmill.NewShmill(dir, panicCh),
 		model: &Model{
 			File:      filepath.Join(dir, pathutil.WMShMill),
 			Now:       time.Now(),
@@ -115,15 +85,6 @@ func Setup() (*Shell, error) {
 		termEventCh: make(chan termbox.Event),
 		panicCh:     panicCh,
 	}, nil
-}
-
-func setupMirror(ctx context.Context, fs fs.FSBridge, dir string, ptrID data.PointerID) error {
-	// TODO(dbentley): allow specifying a different file on the command-line
-	matcher, err := ospath.NewFileMatcher(pathutil.WMShMill)
-	if err != nil {
-		return err
-	}
-	return fs.ToWMStart(ctx, dir, ptrID, matcher)
 }
 
 func (sh *Shell) cancelCmd() {
@@ -151,7 +112,6 @@ func (sh *Shell) cancelCmd() {
 
 func (sh *Shell) Run() error {
 	defer termbox.Close()
-	go sh.waitForEdits()
 	go sh.waitForTermEvents()
 	sh.timeCh = time.Tick(time.Second)
 	runTimeCh := time.Tick(200 * time.Millisecond)
@@ -162,10 +122,6 @@ func (sh *Shell) Run() error {
 	// then await input
 	for {
 		select {
-		case head := <-sh.editCh:
-			if err := sh.handleEdit(head); err != nil {
-				return err
-			}
 		case err := <-sh.editErrCh:
 			return err
 		case event, ok := <-sh.shmillCh:
@@ -208,26 +164,6 @@ func concatenateAndDedupe(old, new []string) []string {
 		old = append(old, n)
 	}
 	return old
-}
-
-func (sh *Shell) handleEdit(head data.PointerAtRev) error {
-	sh.model.Rev = int(head.Rev)
-
-	ptsAtSnap, err := sh.db.Get(sh.ctx, head)
-	if err != nil {
-		return err
-	}
-
-	pathsChanged, err := sh.db.PathsChanged(sh.ctx, sh.model.HeadSnap, ptsAtSnap.SnapID, data.RecipeRTagForPointer(ptsAtSnap.ID), dbpath.NewAllMatcher())
-	if err != nil {
-		return err
-	}
-
-	sh.model.HeadSnap = ptsAtSnap.SnapID
-
-	sh.model.QueuedFiles = concatenateAndDedupe(sh.model.QueuedFiles, pathsChanged)
-
-	return nil
 }
 
 func (sh *Shell) startRun() {
@@ -389,36 +325,6 @@ func (sh *Shell) runFlow() {
 }
 
 // Below here is code that happens on goroutines other than Run()
-
-func (sh *Shell) waitForEdits() (outerErr error) {
-	// TODO(dbentley): the Millfile might run a command that edits this dir, which would cause an edit, which would cause us to start rerunning.
-	// That is silly; how can we filter out, while not missing intentional user edits?
-	defer func() {
-		if outerErr != nil {
-			sh.editErrCh <- outerErr
-		}
-		close(sh.editErrCh)
-		close(sh.editCh)
-		if r := recover(); r != nil {
-			sh.panicCh <- fmt.Errorf("edit panic: %v", r)
-		}
-	}()
-
-	head := data.PointerAtRev{ID: ptrID}
-	for {
-		if err := sh.db.Wait(sh.ctx, head); err != nil {
-			return err
-		}
-
-		var err error
-		head, err = sh.db.Head(sh.ctx, ptrID)
-		if err != nil {
-			return err
-		}
-
-		sh.editCh <- head
-	}
-}
 
 func (sh *Shell) waitForTermEvents() {
 	defer func() {

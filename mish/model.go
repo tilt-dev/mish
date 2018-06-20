@@ -10,7 +10,6 @@ import (
 type Model struct {
 	File     string
 	Now      time.Time
-	Rev      int
 	HeadSnap data.SnapshotID
 
 	// files that have changed since we started running

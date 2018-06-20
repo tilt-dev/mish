@@ -76,10 +76,6 @@ func (r *Render) renderFooter(m *Model) {
 
 	p.text(fmt.Sprintf("Flow: %s %s ", flow, div))
 
-	// Revision
-	rev := fmt.Sprintf("Revision %d %s ", m.Rev, div)
-	p.text(rev)
-
 	// Exec status
 	exec := "Waiting for " + pathutil.WMShMill
 	if m.Shmill != nil {

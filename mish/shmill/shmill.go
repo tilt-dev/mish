@@ -11,8 +11,6 @@ import (
 
 	"github.com/windmilleng/skylurk"
 
-	"github.com/windmilleng/mish/bridge/fs"
-	"github.com/windmilleng/mish/data"
 	"github.com/windmilleng/mish/data/pathutil"
 	"github.com/windmilleng/mish/errors"
 )
@@ -48,13 +46,11 @@ func (CmdOutputEvent) shmillEvent()    {}
 func (CmdDoneEvent) shmillEvent()      {}
 func (ExecDoneEvent) shmillEvent()     {}
 
-func NewShmill(fs fs.FSBridge, ptrID data.PointerID, dir string, panicCh chan error) *Shmill {
-	return &Shmill{fs: fs, ptrID: ptrID, dir: dir, panicCh: panicCh}
+func NewShmill(dir string, panicCh chan error) *Shmill {
+	return &Shmill{dir: dir, panicCh: panicCh}
 }
 
 type Shmill struct {
-	fs      fs.FSBridge
-	ptrID   data.PointerID
 	dir     string
 	panicCh chan error
 }
