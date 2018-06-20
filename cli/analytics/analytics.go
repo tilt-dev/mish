@@ -1,23 +1,34 @@
 package analytics
 
 import (
-	"os"
-	"strings"
-
 	"fmt"
 
+	"time"
+
+	"net/http"
+
+	"encoding/json"
+
+	"bytes"
+	"os"
+
 	"github.com/spf13/cobra"
-	"github.com/windmilleng/mish/cli/dirs"
 )
 
 const optInByDefault = false
+const statsEndpt = "http://localhost:8118/report"
+const contentTypeJson = "application/json"
+
+// keys for request to stats server
+const (
+	keyName     = "name"
+	keyUser     = "user"
+	keyDuration = "duration"
+)
 
 func Init() (Analytics, *cobra.Command, error) {
-	// TODO(maia): use this info in Analytics struct
-	//optedIn := optedIn()
-	//fmt.Fprintf(os.Stderr, "ANALYTICS OPTED-IN: %t\n", optedIn)
 
-	a := NewMemoryAnalytics()
+	a := NewRemoteAnalytics()
 	c, err := initCLI()
 	if err != nil {
 		return nil, nil, err
@@ -26,77 +37,118 @@ func Init() (Analytics, *cobra.Command, error) {
 	return a, c, nil
 }
 
-type AnalyticsOpt int
-
-const (
-	AnalyticsOptDefault AnalyticsOpt = iota
-	AnalyticsOptOut
-	AnalyticsOptIn
-)
-
-var choices = map[AnalyticsOpt]string{
-	AnalyticsOptDefault: "default",
-	AnalyticsOptOut:     "opt-out",
-	AnalyticsOptIn:      "opt-in",
-}
-
-func readChoiceFile() (string, error) {
-	d, err := dirs.UseWindmillDir()
-	if err != nil {
-		return "", err
-	}
-
-	txt, err := d.ReadFile(choiceFile)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return "", err
-		}
-		txt = ""
-	}
-
-	return strings.TrimSpace(txt), nil
-}
-
-func optedIn() bool {
-	txt, err := readChoiceFile()
-	if txt != "" {
-		switch txt {
-		case choices[AnalyticsOptOut]:
-			return false
-		case choices[AnalyticsOptIn]:
-			return true
-		}
-	}
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "analytics.optedIn: %v\n", err)
-	}
-	return optInByDefault
-}
-
-// TODO(maia): all metrics add user hash as tag (or method: IncWithTagsAndUser?)
 type Analytics interface {
 	Count(name string, tags map[string]string, n int)
-	// TODO(maia): default increment of 1
+	Incr(name string, tags map[string]string)
+	Timer(name string, dur time.Duration, tags map[string]string)
 }
 
-// Awkwardly just store stuff in memory for now
+type RemoteAnalytics struct {
+	Url     string
+	UserId  string
+	OptedIn bool
+}
+
+// getUserHash returns a unique identifier for this user by hashing... something.
+func getUserId() string {
+	return "getUserId_not_implemented"
+}
+
+func NewRemoteAnalytics() *RemoteAnalytics {
+	optedIn := optedIn()
+	return newRemoteAnalytics(statsEndpt, getUserId(), optedIn)
+}
+
+func newRemoteAnalytics(url, userId string, optedIn bool) *RemoteAnalytics {
+	return &RemoteAnalytics{Url: url, UserId: userId, OptedIn: optedIn}
+}
+
+func (a *RemoteAnalytics) baseReq(name string, tags map[string]string) map[string]interface{} {
+	req := map[string]interface{}{keyName: name, keyUser: a.UserId}
+	for k, v := range tags {
+		req[k] = v
+	}
+	return req
+}
+
+func (a *RemoteAnalytics) postReq(req map[string]interface{}) {
+	j, err := json.Marshal(req)
+	if err != nil {
+		// Stat reporter can't return errs, just print it.
+		fmt.Fprintf(os.Stderr, "[analytics] json.Marshal: %v\n", err)
+		return
+	}
+	reader := bytes.NewReader(j)
+	resp, err := http.Post(a.Url, contentTypeJson, reader)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[analytics] http.Post: %v\n", err)
+		return
+	}
+	if resp.StatusCode != 200 {
+		fmt.Fprintf(os.Stderr, "[analytics] http.Post returned status: %s\n", resp.Status)
+	}
+}
+
+func (a *RemoteAnalytics) Count(name string, tags map[string]string, n int) {
+	if !a.OptedIn {
+		return
+	}
+
+	// TODO: include n
+	req := a.baseReq(name, tags)
+	a.postReq(req)
+
+}
+
+func (a *RemoteAnalytics) Incr(name string, tags map[string]string) {
+	if !a.OptedIn {
+		return
+	}
+	a.Count(name, tags, 1)
+}
+
+func (a *RemoteAnalytics) Timer(name string, dur time.Duration, tags map[string]string) {
+	if !a.OptedIn {
+		return
+	}
+
+	req := a.baseReq(name, tags)
+	req[keyDuration] = dur
+	a.postReq(req)
+}
+
 type MemoryAnalytics struct {
-	Incs []IncEvent
+	Counts []CountEvent
+	Timers []TimeEvent
 }
 
-type IncEvent struct {
+type CountEvent struct {
 	name string
 	tags map[string]string
 	n    int
 }
 
-func (a *MemoryAnalytics) Count(name string, tags map[string]string, n int) {
-	a.Incs = append(a.Incs, IncEvent{name: name, tags: tags, n: n})
+type TimeEvent struct {
+	name string
+	tags map[string]string
+	dur  time.Duration
 }
 
 func NewMemoryAnalytics() *MemoryAnalytics {
 	return &MemoryAnalytics{}
 }
 
+func (a *MemoryAnalytics) Count(name string, tags map[string]string, n int) {
+	a.Counts = append(a.Counts, CountEvent{name: name, tags: tags, n: n})
+}
+
+func (a *MemoryAnalytics) Incr(name string, tags map[string]string) {
+	a.Count(name, tags, 1)
+}
+
+func (a *MemoryAnalytics) Timer(name string, dur time.Duration, tags map[string]string) {
+	a.Timers = append(a.Timers, TimeEvent{name: name, dur: dur, tags: tags})
+}
+
+var _ Analytics = &RemoteAnalytics{}
 var _ Analytics = &MemoryAnalytics{}
