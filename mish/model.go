@@ -58,6 +58,7 @@ type Cursor struct {
 type Shmill struct {
 	Evals    []Eval
 	Start    time.Time
+	RunTime  time.Duration
 	Duration time.Duration
 	Err      error // top-level error (unexpected; killed the whole exec)
 	Done     bool

@@ -195,7 +195,7 @@ func (r *Render) renderShmill(m *Model) []int {
 	}
 
 	for _, b := range bs {
-		numLines := r.renderBlock(p, b)
+		numLines := r.renderBlock(p, b, m)
 		blocks = append(blocks, numLines)
 	}
 
@@ -221,7 +221,7 @@ type blockView struct {
 }
 
 // renderEval renders a blockView to the canvas, returning the number of lines it takes up
-func (r *Render) renderBlock(p *pen, b blockView) (numLines int) {
+func (r *Render) renderBlock(p *pen, b blockView, m *Model) (numLines int) {
 	startY := p.posY
 	p.newlineMaybe()
 
@@ -238,10 +238,11 @@ func (r *Render) renderBlock(p *pen, b blockView) (numLines int) {
 	}
 	p.text(headline)
 
-	// STATUS
-	// TODO: color indicating pass/fail?
-	state := "pending …"
-	if b.done {
+	state := fmt.Sprintf("pending...")
+
+	if !b.done {
+		state = fmt.Sprintf("%s elapsed", m.Shmill.RunTime.Truncate(time.Millisecond).String())
+	} else {
 		if b.err == nil {
 			state = fmt.Sprintf("(%s) ✔", b.dur)
 		} else {

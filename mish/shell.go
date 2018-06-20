@@ -35,13 +35,14 @@ type Shell struct {
 	view   *View
 	a      analytics.Analytics
 
-	editCh       chan data.PointerAtRev
-	editErrCh    chan error
-	termEventCh  chan termbox.Event
-	timeCh       <-chan time.Time
-	panicCh      chan error
-	shmillCh     chan shmill.Event
-	shmillCancel context.CancelFunc
+	editCh        chan data.PointerAtRev
+	editErrCh     chan error
+	termEventCh   chan termbox.Event
+	timeCh        <-chan time.Time
+	timeOfLastRun time.Time
+	panicCh       chan error
+	shmillCh      chan shmill.Event
+	shmillCancel  context.CancelFunc
 }
 
 var ptrID = data.MustNewPointerID(data.AnonymousID, "mirror", data.UserPtr)
@@ -153,6 +154,7 @@ func (sh *Shell) Run() error {
 	go sh.waitForEdits()
 	go sh.waitForTermEvents()
 	sh.timeCh = time.Tick(time.Second)
+	runTimeCh := time.Tick(200 * time.Millisecond)
 	defer sh.cancelCmd()
 
 	// run what the mill script currently contains
@@ -181,6 +183,9 @@ func (sh *Shell) Run() error {
 		case t := <-sh.timeCh:
 			sh.model.Now = t
 			sh.model.Spinner.Incr()
+		case rt := <-runTimeCh:
+			elapsed := rt.Sub(sh.timeOfLastRun)
+			sh.model.Shmill.RunTime = elapsed
 		case err := <-sh.panicCh:
 			return err
 		}
@@ -226,6 +231,7 @@ func (sh *Shell) handleEdit(head data.PointerAtRev) error {
 }
 
 func (sh *Shell) startRun() {
+	sh.timeOfLastRun = time.Now()
 	sh.model.Shmill = NewShmill()
 	sh.model.Cursor = Cursor{}
 	sh.model.QueuedFiles = nil
