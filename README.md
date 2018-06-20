@@ -7,7 +7,7 @@ I'm an early experiment, not a finished product, but I bet I can still make your
 ![mish demo gifcast](./gifcast.gif "mish demo gifcast")
 
 ## Getting the binary
-If you're running OSX or Linux, you can download a pre-compiled binary from [**our releases page**](https://github.com/windmilleng/mish/releases). Otherwise, you can install via the Go toolchain. First [install Go](https://golang.org/doc/install#install) and make sure that you've added `/usr/local/go/bin` to the `PATH` environment variable. Then install `mish` with:
+If you're running macOS or Linux, you can download a pre-compiled binary from [**our releases page**](https://github.com/windmilleng/mish/releases). Otherwise, you can install via the Go toolchain. First [install Go](https://golang.org/doc/install#install) and make sure that you've added `/usr/local/go/bin` to the `PATH` environment variable. Then install `mish` with:
 ```bash
 go get -u github.com/windmilleng/mish/cmd/mish
 ```
@@ -51,7 +51,7 @@ Mish functions are called workflows and are prefixed by `wf_`. Once you've defin
 ![mish flows demo gif](https://user-images.githubusercontent.com/4122993/41476760-7c4f0a6c-7090-11e8-94c4-32607137ef34.gif)
 
 ### Run two mishes at once
-You can use mish to run a server in one mish window and simultanously run commands on that server in another mish window. Also, by implementing workflows in your `notes.mill`, you can edit the server and commands you're running and rerun them easily in each window. 
+You can use mish to run a server in one mish window and simultanously run commands on that server in another mish window. Also, by implementing workflows in your `notes.mill`, you can edit the server and commands you're running and rerun them easily in each window.
 
 ![double mish demo gif](https://user-images.githubusercontent.com/4122993/41477185-8d64737c-7091-11e8-9881-acfa668874aa.gif)
 
