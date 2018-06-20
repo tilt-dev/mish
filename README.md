@@ -2,7 +2,7 @@
 
 Bonjour! Je m'appelle Michel—pronounced mee-shell (/mi.ʃɛl/). Coincidentally, that's also how you pronounce `mish`, which stands for **Mi**ll **Sh**ell. Feel free to imagine the rest of this document in an outrageous French accent as I help you get `mish` up and running.
 
-I'm an early experiment, not a finished product, but I bet I can still make your workflow a little bit better. Read more [on the Windmill Blog](https://medium.com/windmill-engineering/mish-cruise-control-for-developers-98629709b5ec).
+I'm an early experiment, not a finished product, but I bet I can still make your workflow a little bit better. Read more [on the Windmill Blog](https://medium.com/windmill-engineering/mish-flexible-shell-notebooks-3d8a0e008716).
 
 ![mish demo gif](https://user-images.githubusercontent.com/4122993/41674916-3176ebc4-748f-11e8-8bf7-1ab7da6c25d7.gif)
 
