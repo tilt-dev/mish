@@ -51,12 +51,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/fsnotify/fsevents"
-  packages = ["."]
-  revision = "ed9a50f8badcd11817e4fa3044b6765bb54219db"
-
-[[projects]]
   name = "github.com/go-logfmt/logfmt"
   packages = ["."]
   revision = "390ab7935ee28ec6b286364bba9b4dd6410cb3d5"
@@ -143,6 +137,12 @@
   revision = "4b2026451a7f3206852c08baccfa89c756d5fba3"
 
 [[projects]]
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/kr/logfmt"
   packages = ["."]
@@ -224,6 +224,24 @@
   packages = ["."]
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
   version = "v1.0.3"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  revision = "1e58aa3361fd650121dceeedc399e7189c05674a"
+
+[[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
+  version = "v1.0.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/windmilleng/fsevents"
+  packages = ["."]
+  revision = "d9060b7f56f98ec69d5c6c1c03a87c8b7a7bc140"
 
 [[projects]]
   branch = "master"
@@ -411,6 +429,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fedcaf3140fa1032c22138e5967a9661cdb80a8cce99e969337ab8802f5aa7df"
+  inputs-digest = "e955193a9df5c35f42126b4ddcd681657703206f46d9ec7c3a29f8e8fa815722"
   solver-name = "gps-cdcl"
   solver-version = 1
