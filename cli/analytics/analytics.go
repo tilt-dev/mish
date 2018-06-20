@@ -72,26 +72,32 @@ func optedIn() bool {
 		fmt.Fprintf(os.Stderr, "analytics.optedIn: %v\n", err)
 	}
 	return optInByDefault
-
 }
 
+// TODO(maia): all metrics add user hash as tag (or method: IncWithTagsAndUser?)
 type Analytics interface {
-	//IncrementWithTags(name string, tags map[string]string, n int) error
-	// For now, just increment w/o tags
+	Count(name string, tags map[string]string, n int)
 	// TODO(maia): default increment of 1
-	Increment(name string, n int) error
 }
 
 // Awkwardly just store stuff in memory for now
 type MemoryAnalytics struct {
-	Stats map[string]int
+	Incs []IncEvent
 }
 
-func (a *MemoryAnalytics) Increment(name string, n int) error {
-	a.Stats[name] = a.Stats[name] + n
-	return nil
+type IncEvent struct {
+	name string
+	tags map[string]string
+	n    int
+}
+
+func (a *MemoryAnalytics) Count(name string, tags map[string]string, n int) {
+	fmt.Printf("%s += %d\n", name, n)
+	a.Incs = append(a.Incs, IncEvent{name: name, tags: tags, n: n})
 }
 
 func NewMemoryAnalytics() *MemoryAnalytics {
-	return &MemoryAnalytics{make(map[string]int)}
+	return &MemoryAnalytics{}
 }
+
+var _ Analytics = &MemoryAnalytics{}
