@@ -13,6 +13,12 @@ import (
 
 	"os"
 
+	"context"
+
+	"os/exec"
+
+	"crypto/md5"
+
 	"github.com/spf13/cobra"
 )
 
@@ -54,9 +60,22 @@ type RemoteAnalytics struct {
 	OptedIn bool
 }
 
-// getUserHash returns a unique identifier for this user by hashing... something.
+func hashMd5(in []byte) string {
+	h := md5.New()
+	return fmt.Sprintf("%x", h.Sum(in))
+}
+
+// getUserHash returns a unique identifier for this user by hashing `uname -a`
 func getUserId() string {
-	return "getUserId_not_implemented"
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "uname", "-a")
+	out, err := cmd.Output()
+	if err != nil || ctx.Err() != nil {
+		// Something went wrong, but ¯\_(ツ)_/¯
+		return "anon"
+	}
+	return hashMd5(out)
 }
 
 func NewRemoteAnalytics() *RemoteAnalytics {
