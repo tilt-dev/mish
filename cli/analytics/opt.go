@@ -82,13 +82,11 @@ func readChoiceFile() (string, error) {
 
 func optedIn() bool {
 	txt, err := readChoiceFile()
-	if txt != "" {
-		switch txt {
-		case choices[AnalyticsOptOut]:
-			return false
-		case choices[AnalyticsOptIn]:
-			return true
-		}
+	switch txt {
+	case choices[AnalyticsOptOut]:
+		return false
+	case choices[AnalyticsOptIn]:
+		return true
 	}
 
 	if err != nil {
