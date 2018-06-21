@@ -64,6 +64,10 @@ func applyWrite(op *data.WriteFileOp, checkout string) error {
 	absPath := path.Join(checkout, op.Path)
 	switch op.Type {
 	case data.FileRegular:
+		// if absPath is a symlink, we need to remove it before writing to it
+		if err := os.Remove(absPath); err != nil && !os.IsNotExist(err) {
+			return err
+		}
 		return ioutil.WriteFile(absPath, op.Data.InternalByteSlice(), fileMode(op.Executable))
 	case data.FileSymlink:
 		symlink := string(op.Data.InternalByteSlice())
@@ -77,6 +81,16 @@ func applyWrite(op *data.WriteFileOp, checkout string) error {
 			return fmt.Errorf("applyWrite: symlinks can't point outside of root directory. Symlink %q points to %q", op.Path, symlink)
 		}
 
+		// Remove the newName if it exists.
+		_, err := os.Lstat(absPath)
+		if err == nil {
+			if err := os.Remove(absPath); err != nil {
+				return err
+			}
+		}
+		if !os.IsNotExist(err) {
+			return err
+		}
 		return os.Symlink(symlink, absPath)
 	default:
 		return fmt.Errorf("applyWrite: unknown file type %d: %s", op.Type, op.Path)

@@ -89,6 +89,61 @@ func TestWriteMalformedAbsSymlink(t *testing.T) {
 	}
 }
 
+func TestRewriteSymlink(t *testing.T) {
+	f := newMirrorFixture(t)
+	defer f.tearDown()
+
+	ioutil.WriteFile(f.SrcPath("a.txt"), []byte("a"), PERM)
+	ioutil.WriteFile(f.SrcPath("b.txt"), []byte("b"), PERM)
+	err := applyToFS(&data.WriteFileOp{
+		Path: "c.txt",
+		Data: data.BytesFromString("a.txt"),
+		Type: data.FileSymlink,
+	}, f.DestDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = applyToFS(&data.WriteFileOp{
+		Path: "c.txt",
+		Data: data.BytesFromString("b.txt"),
+		Type: data.FileSymlink,
+	}, f.DestDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWriteThroughSymlink(t *testing.T) {
+	f := newMirrorFixture(t)
+	defer f.tearDown()
+
+	ioutil.WriteFile(f.SrcPath("a.txt"), []byte("a"), PERM)
+	f.mirror()
+	f.assertDestFileContents("a.txt", "a")
+
+	err := applyToFS(&data.WriteFileOp{
+		Path: "b.txt",
+		Data: data.BytesFromString("a.txt"),
+		Type: data.FileSymlink,
+	}, f.DestDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = applyToFS(&data.WriteFileOp{
+		Path: "b.txt",
+		Data: data.BytesFromString("b"),
+		Type: data.FileRegular,
+	}, f.DestDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	f.assertDestFileContents("b.txt", "b")
+	f.assertDestFileContents("a.txt", "a")
+}
+
 func TestWriteInnerDirFile(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("Test times out on macOS. Deadlock somewhere in fsnotify.")
