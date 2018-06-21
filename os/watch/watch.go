@@ -103,7 +103,7 @@ func newWorkspaceWatcherHelperWithLimit(path string, o *optimizer, matcher *ospa
 	}
 
 	coalescedCh := make(chan fsnotify.Event)
-	go coalesceEvents(watcher.Events(), coalescedCh)
+	go coalesceEvents(watcher.Events(), coalescedCh, defaultCoalesceWaitTime)
 	go ww.loop(initialOpsEvent, coalescedCh)
 	return ww, nil
 }

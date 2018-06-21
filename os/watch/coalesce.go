@@ -10,7 +10,11 @@ import (
 // files where we see continuous data for a long time.
 const MAX_COALESCE = 10
 
-func coalesceEvents(inCh chan fsnotify.Event, outCh chan fsnotify.Event) {
+// wait time is the maximum amount of space between two events
+// to make us coalesce them.
+const defaultCoalesceWaitTime = time.Millisecond
+
+func coalesceEvents(inCh chan fsnotify.Event, outCh chan fsnotify.Event, waitTime time.Duration) {
 	defer func() {
 		close(outCh)
 	}()
@@ -49,7 +53,7 @@ func coalesceEvents(inCh chan fsnotify.Event, outCh chan fsnotify.Event) {
 				}
 			} else {
 				event = nextEvent
-				timerCh = time.After(time.Millisecond)
+				timerCh = time.After(waitTime)
 				coalesceCount = 1
 			}
 		case <-timerCh:

@@ -191,6 +191,7 @@ func TestCoalesceChannel(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			inCh := make(chan fsnotify.Event)
 			outCh := make(chan fsnotify.Event)
+			waitTime := 5 * time.Millisecond
 
 			doneCh := make(chan struct{})
 			actual := []fsnotify.Event(nil)
@@ -201,11 +202,11 @@ func TestCoalesceChannel(t *testing.T) {
 				}
 				close(doneCh)
 			}()
-			go coalesceEvents(inCh, outCh)
+			go coalesceEvents(inCh, outCh, waitTime)
 
 			for _, e := range expect.in {
 				if e == nil {
-					time.Sleep(5 * time.Millisecond)
+					time.Sleep(2 * waitTime)
 				} else {
 					inCh <- *e
 				}
