@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const optInByDefault = false
 const statsEndpt = "http://localhost:8118/report"
 const contentTypeJson = "application/json"
 

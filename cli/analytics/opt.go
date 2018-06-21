@@ -16,10 +16,51 @@ const (
 	AnalyticsOptIn
 )
 
+const optInByDefault = false
+
 var choices = map[AnalyticsOpt]string{
 	AnalyticsOptDefault: "default",
 	AnalyticsOptOut:     "opt-out",
 	AnalyticsOptIn:      "opt-in",
+}
+
+func OptStatus() (string, error) {
+	txt, err := readChoiceFile()
+	if err != nil {
+		return txt, err
+	}
+	choice := AnalyticsOptDefault
+
+	switch txt {
+	case choices[AnalyticsOptIn]:
+		choice = AnalyticsOptIn
+	case choices[AnalyticsOptOut]:
+		choice = AnalyticsOptOut
+	}
+
+	return choices[choice], nil
+}
+
+func SetOpt(c string) error {
+	choice := AnalyticsOptDefault
+	for k, v := range choices {
+		if v == c {
+			choice = k
+		}
+	}
+
+	c = choices[choice] // make sure we're using a valid string
+
+	d, err := dirs.UseWindmillDir()
+	if err != nil {
+		return err
+	}
+
+	if err = d.WriteFile(choiceFile, c); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func readChoiceFile() (string, error) {

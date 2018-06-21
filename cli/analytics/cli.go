@@ -12,22 +12,11 @@ import (
 
 func analyticsStatus(_ *cobra.Command, args []string) error {
 	//fmt.Println("[ for more info: https://windmill.engineering/analytics ]")
-
-	txt, err := readChoiceFile()
+	choice, err := OptStatus()
 	if err != nil {
-		return fmt.Errorf("readChoiceFile: %v", err)
+		return err
 	}
-
-	choice := AnalyticsOptDefault
-
-	switch txt {
-	case choices[AnalyticsOptOut]:
-		choice = AnalyticsOptOut
-	case choices[AnalyticsOptIn]:
-		choice = AnalyticsOptIn
-	}
-
-	fmt.Printf("current collection strategy: %v\n", choices[choice])
+	fmt.Printf("current collection strategy: %v\n", choice)
 
 	return nil
 }
@@ -38,24 +27,14 @@ func analyticsOpt(_ *cobra.Command, args []string) (outerErr error) {
 		return fmt.Errorf("no choice given; pass it as first arg: <tool> analytics opt <choice>")
 	}
 	choiceStr := args[0]
-	var choice AnalyticsOpt
-	for k, v := range choices {
-		if v == choiceStr {
-			choice = k
-		}
+	err := SetOpt(choiceStr)
+	if err != nil {
+		return err
 	}
-
-	choiceStr = choices[choice] // make sure we're using a valid string
-
 	d, err := dirs.UseWindmillDir()
 	if err != nil {
 		return err
 	}
-
-	if err := d.WriteFile(choiceFile, choiceStr); err != nil {
-		return err
-	}
-
 	fmt.Fprintf(os.Stderr, "wrote user collection strategy %q to file %v\n", choiceStr, filepath.Join(d.Root(), choiceFile))
 	return nil
 }
