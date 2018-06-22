@@ -22,13 +22,10 @@ func checkOptFlag(opt *bool) {
 	}
 }
 
-func initAnalytics() (analytics.Analytics, error) {
-	a, _, err := analytics.Init("mish")
-	if err != nil {
-		return nil, err
-	}
+func initAnalytics() analytics.Analytics {
+	a := analytics.NewRemoteAnalytics("mish")
 
 	mishlytics = a
 
-	return a, nil
+	return a
 }

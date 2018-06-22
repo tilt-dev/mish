@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -61,12 +63,11 @@ func Setup() (*Shell, error) {
 	}
 
 	checkOptFlag(optPtr)
-	a, err := initAnalytics()
-	if err != nil {
-		return nil, err
-	}
+	a := initAnalytics()
 
-	// TODO: mishlytics.init.Write(dir)
+	mishlytics.Incr("init", map[string]string{
+		"dir": dir,
+	})
 
 	panicCh := make(chan error)
 
@@ -214,7 +215,7 @@ func (sh *Shell) handleShmill(ev shmill.Event) error {
 		run.done = true
 		run.err = ev.Err
 		run.duration = time.Now().Sub(run.start)
-		go sh.recordRunEvent(run)
+		go sh.recordRunEvents(run)
 	case shmill.ExecDoneEvent:
 		m.Err = ev.Err
 		m.Done = true
@@ -223,12 +224,23 @@ func (sh *Shell) handleShmill(ev shmill.Event) error {
 	return nil
 }
 
-func (sh *Shell) recordRunEvent(run *Run) {
-	//ev := runEvent{
-	//	runLatency: run.duration,
-	//	workflows:  len(sh.model.Flows),
-	//}
-	// TODO: mishlytics.runs.Write(ev)
+func (sh *Shell) recordRunEvents(run *Run) {
+	file := sh.model.File
+	text, err := ioutil.ReadFile(file)
+	lines := 0
+	if err == nil {
+		lines = strings.Count(string(text), "\n")
+		mishlytics.Count("lenNotebook", map[string]string{}, lines)
+	}
+
+	mishlytics.Count("numWorkflows", map[string]string{}, len(sh.model.Flows))
+	mishlytics.Timer("run", run.duration, map[string]string{})
+}
+
+func (sh *Shell) recordWFSwitchEvent() {
+	mishlytics.Incr("wf_switch", map[string]string{
+		"numWorkflows": string(len(sh.model.Flows)),
+	})
 }
 
 func (sh *Shell) handleTerminal(event termbox.Event) {
@@ -241,6 +253,7 @@ func (sh *Shell) handleTerminal(event termbox.Event) {
 	}
 
 	if sh.model.ShowFlowChooser {
+		go sh.recordWFSwitchEvent()
 		sh.handleTermForFlowChooser(event)
 		return
 	}
