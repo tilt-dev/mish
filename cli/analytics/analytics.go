@@ -29,16 +29,15 @@ const statsTimeout = time.Minute
 
 // keys for request to stats server
 const (
+	keyDuration = "duration"
 	keyName     = "name"
 	keyUser     = "user"
-	keyDuration = "duration"
 )
 
 var cli = &http.Client{Timeout: statsTimeout}
 
-func Init() (Analytics, *cobra.Command, error) {
-
-	a := NewRemoteAnalytics()
+func Init(appName string) (Analytics, *cobra.Command, error) {
+	a := NewRemoteAnalytics(appName)
 	c, err := initCLI()
 	if err != nil {
 		return nil, nil, err
@@ -55,6 +54,7 @@ type Analytics interface {
 
 type RemoteAnalytics struct {
 	Cli     *http.Client
+	App     string
 	Url     string
 	UserId  string
 	OptedIn bool
@@ -78,17 +78,20 @@ func getUserId() string {
 	return hashMd5(out)
 }
 
-func NewRemoteAnalytics() *RemoteAnalytics {
+func NewRemoteAnalytics(appName string) *RemoteAnalytics {
 	optedIn := optedIn()
-	return newRemoteAnalytics(cli, statsEndpt, getUserId(), optedIn)
+	return newRemoteAnalytics(cli, appName, statsEndpt, getUserId(), optedIn)
 }
 
-func newRemoteAnalytics(cli *http.Client, url, userId string, optedIn bool) *RemoteAnalytics {
-	return &RemoteAnalytics{Cli: cli, Url: url, UserId: userId, OptedIn: optedIn}
+func newRemoteAnalytics(cli *http.Client, app, url, userId string, optedIn bool) *RemoteAnalytics {
+	return &RemoteAnalytics{Cli: cli, App: app, Url: url, UserId: userId, OptedIn: optedIn}
 }
 
+func (a *RemoteAnalytics) namespaced(name string) string {
+	return fmt.Sprintf("%s.%s", a.App, name)
+}
 func (a *RemoteAnalytics) baseReqBody(name string, tags map[string]string) map[string]interface{} {
-	req := map[string]interface{}{keyName: name, keyUser: a.UserId}
+	req := map[string]interface{}{keyName: a.namespaced(name), keyUser: a.UserId}
 	for k, v := range tags {
 		req[k] = v
 	}
