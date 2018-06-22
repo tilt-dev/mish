@@ -2,6 +2,7 @@ package mish
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -39,6 +40,8 @@ var ptrID = data.MustNewPointerID(data.AnonymousID, "mirror", data.UserPtr)
 
 func Setup() (*Shell, error) {
 	ctx := context.Background()
+	optPtr := flag.Bool("analytics", false, "opt in to Windmill analytics collection/upload")
+	flag.Parse()
 
 	wmDir, err := dirs.GetWindmillDir()
 	if err != nil {
@@ -57,6 +60,7 @@ func Setup() (*Shell, error) {
 		return nil, err
 	}
 
+	checkOptFlag(optPtr)
 	a, err := initAnalytics()
 	if err != nil {
 		return nil, err

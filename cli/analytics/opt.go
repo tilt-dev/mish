@@ -63,6 +63,11 @@ func SetOpt(c string) error {
 	return nil
 }
 
+func SetAnalyticsOpt(c AnalyticsOpt) error {
+	choice := choices[c]
+	return SetOpt(choice)
+}
+
 func readChoiceFile() (string, error) {
 	d, err := dirs.UseWindmillDir()
 	if err != nil {

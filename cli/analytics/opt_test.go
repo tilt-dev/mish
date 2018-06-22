@@ -1,7 +1,6 @@
 package analytics_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -9,14 +8,13 @@ import (
 	"github.com/windmilleng/mish/os/temp"
 )
 
-func TestOpt(t *testing.T) {
+func TestSetOpt(t *testing.T) {
 	oldWindmillDir := os.Getenv("WINDMILL_DIR")
 	defer os.Setenv("WINDMILL_DIR", oldWindmillDir)
 	tmpdir, err := temp.NewDir("TestOpt")
 	if err != nil {
 		t.Fatalf("Error making temp dir: %v", err)
 	}
-	fmt.Println(tmpdir)
 
 	f := setup(t)
 
@@ -31,6 +29,30 @@ func TestOpt(t *testing.T) {
 	f.assertOptStatus("opt-out")
 
 	analytics.SetOpt("foo")
+	f.assertOptStatus("default")
+}
+
+func TestSetAnalyticsOpt(t *testing.T) {
+	oldWindmillDir := os.Getenv("WINDMILL_DIR")
+	defer os.Setenv("WINDMILL_DIR", oldWindmillDir)
+	tmpdir, err := temp.NewDir("TestOpt")
+	if err != nil {
+		t.Fatalf("Error making temp dir: %v", err)
+	}
+
+	f := setup(t)
+
+	os.Setenv("WINDMILL_DIR", tmpdir.Path())
+
+	f.assertOptStatus("default")
+
+	analytics.SetAnalyticsOpt(analytics.AnalyticsOptIn)
+	f.assertOptStatus("opt-in")
+
+	analytics.SetAnalyticsOpt(analytics.AnalyticsOptOut)
+	f.assertOptStatus("opt-out")
+
+	analytics.SetAnalyticsOpt(99999)
 	f.assertOptStatus("default")
 }
 
